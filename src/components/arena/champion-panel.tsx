@@ -45,7 +45,7 @@ export function ChampionPanel({ standing }: { standing: Standing }) {
             <span className="num text-xl leading-none text-bone">{formatNumber(standing.clicks)}</span>
           </div>
           <a
-            href={project.url}
+            href={`/go/${project.slug}`}
             target="_blank"
             rel="noopener noreferrer nofollow"
             className={buttonClass('secondary', 'md')}

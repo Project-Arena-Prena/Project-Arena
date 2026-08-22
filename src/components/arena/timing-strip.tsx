@@ -1,5 +1,5 @@
 import { Label } from '@/components/ui';
-import { formatDate, formatMoney, formatNumber } from '@/lib/format';
+import { formatDate, formatNumber } from '@/lib/format';
 import type { Arena } from '@/lib/types';
 
 interface Cell {
@@ -8,12 +8,12 @@ interface Cell {
   suffix?: string;
 }
 
-export function TimingStrip({ arena }: { arena: Arena }) {
+export function TimingStrip({ arena, supporters = 0 }: { arena: Arena; supporters?: number }) {
   const cells: Cell[] = [
     { label: 'Projects', value: formatNumber(arena.entrantCount), suffix: `/ ${arena.entrantCap}` },
+    { label: 'Supporters', value: formatNumber(supporters) },
     { label: 'Spectators', value: formatNumber(arena.spectators) },
     { label: 'Project Visits', value: formatNumber(arena.visits) },
-    { label: 'Entry', value: arena.entryFeeCents === 0 ? 'FREE' : formatMoney(arena.entryFeeCents) },
     { label: 'Opened', value: formatDate(arena.startsAt) },
     { label: 'Closes', value: formatDate(arena.endsAt) },
   ];

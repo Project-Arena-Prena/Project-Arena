@@ -48,7 +48,7 @@ export async function generateMetadata({
 const CLOCK_LABEL = {
   live: 'Ends In',
   upcoming: 'Starts In',
-  ended: 'Final',
+  finished: 'Final',
 } as const;
 
 export default async function ArenaPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -60,11 +60,12 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
 
   const isLive = arena.status === 'live';
   const isUpcoming = arena.status === 'upcoming';
-  const champion = arena.status === 'ended' ? standings[0] : undefined;
+  const champion = arena.status === 'finished' ? standings[0] : undefined;
   const slotsLeft = Math.max(0, arena.entrantCap - arena.entrantCount);
   const entrants = standings
     .map((s) => s.project)
     .sort((a, b) => a.name.localeCompare(b.name));
+  const supporterCount = standings.reduce((total, row) => total + row.supporters, 0);
 
   return (
     <div className="pb-20">
@@ -75,7 +76,10 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
             <h1 className="text-[34px] font-semibold leading-[0.95] tracking-headline sm:text-5xl lg:text-6xl">
               {arena.name}
             </h1>
-            <p className="max-w-xl text-sm leading-relaxed text-bone-dim sm:text-base">{arena.theme}</p>
+            <p className="max-w-xl text-lg font-medium leading-relaxed text-bone sm:text-xl">
+              {arena.entrantCount} projects. 48 hours. One champion.
+            </p>
+            <p className="max-w-xl text-sm leading-relaxed text-bone-dim">{arena.theme}</p>
           </Reveal>
 
           <Reveal delay={0.06} className="flex shrink-0 flex-col gap-4 lg:items-end">
@@ -85,7 +89,7 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
             </div>
             {isLive ? <Countdown target={arena.endsAt} size="lg" /> : null}
             {isUpcoming ? <Countdown target={arena.startsAt} size="lg" showDays /> : null}
-            {arena.status === 'ended' ? (
+            {arena.status === 'finished' ? (
               <span className="num text-3xl uppercase leading-none tracking-tight text-bone-dim sm:text-4xl">
                 {formatDate(arena.endsAt)}
               </span>
@@ -96,7 +100,7 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
 
       <section className="border-b hairline">
         <Container>
-          <TimingStrip arena={arena} />
+          <TimingStrip arena={arena} supporters={supporterCount} />
         </Container>
       </section>
 
@@ -119,6 +123,9 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
                   </span>
                   <span className="num text-sm text-bone-faint">of {arena.entrantCap}</span>
                 </div>
+                <span className="hidden font-mono text-[9px] uppercase tracking-widest text-bone-faint sm:block">
+                  1 support = 1 pt · 1 unique visit = 2 pts
+                </span>
                 <p className="text-xs text-bone-dim">
                   Entry {arena.entryFeeCents === 0 ? 'is free' : formatMoney(arena.entryFeeCents)}. The grid
                   closes when it is full.
@@ -168,6 +175,12 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
                   </span>
                 ) : null}
               </div>
+
+              {isLive ? (
+                <div className="border-b hairline px-4 py-2 font-mono text-[9px] uppercase tracking-widest text-bone-faint">
+                  Scoring · 1 support = 1 pt · 1 unique visit = 2 pts
+                </div>
+              ) : null}
 
               {standings.length > 0 ? (
                 <div className="overflow-x-auto">

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowUpRight, Check } from 'lucide-react';
 import { buttonClass } from '@/components/ui';
 import { formatNumber } from '@/lib/format';
+import { getVisitorId, supportStorageKey } from '@/lib/visitor';
 
-/** Support + outbound-visit beacons are fire-and-forget: a failed POST must never block the visit. */
+/** Project-level actions share the same validated support and redirect flow as leaderboard cards. */
 export function ProjectActions({
   projectSlug,
   projectName,
@@ -21,38 +22,47 @@ export function ProjectActions({
 }) {
   const [supported, setSupported] = useState(false);
   const [count, setCount] = useState(initialSupporters);
-  const [, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
 
-  function support() {
-    if (supported || !liveArenaSlug) return;
+  useEffect(() => {
+    if (!liveArenaSlug) return;
+    setSupported(window.localStorage.getItem(supportStorageKey(liveArenaSlug, projectSlug)) === '1');
+  }, [liveArenaSlug, projectSlug]);
+
+  async function support() {
+    if (supported || pending || !liveArenaSlug) return;
+    const visitorId = getVisitorId();
+    const storageKey = supportStorageKey(liveArenaSlug, projectSlug);
     setSupported(true);
+    setPending(true);
     setCount((c) => c + 1);
-    startTransition(() => {
-      void fetch('/api/support', {
+    window.localStorage.setItem(storageKey, '1');
+
+    try {
+      const response = await fetch('/api/support', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectSlug, arenaSlug: liveArenaSlug }),
-        keepalive: true,
-      }).catch(() => undefined);
-    });
-  }
-
-  function trackVisit() {
-    void fetch('/api/click', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectSlug, arenaSlug: liveArenaSlug ?? undefined }),
-      keepalive: true,
-    }).catch(() => undefined);
+        body: JSON.stringify({ projectSlug, arenaSlug: liveArenaSlug, visitorId }),
+      });
+      const payload = (await response.json().catch(() => null)) as { duplicate?: boolean } | null;
+      if (!response.ok) throw new Error('support_failed');
+      if (payload?.duplicate) setCount((c) => Math.max(initialSupporters, c - 1));
+    } catch {
+      window.localStorage.removeItem(storageKey);
+      setSupported(false);
+      setCount((c) => Math.max(initialSupporters, c - 1));
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
     <div className="flex w-full flex-col gap-2 sm:w-[248px]">
       <a
-        href={projectUrl}
+        href={`/go/${projectSlug}${liveArenaSlug ? `?arena=${encodeURIComponent(liveArenaSlug)}` : ''}`}
         target="_blank"
         rel="noopener noreferrer nofollow"
-        onClick={trackVisit}
+        onClick={() => getVisitorId()}
         aria-label={`Visit ${projectName}`}
         className={buttonClass('primary', 'md', 'w-full')}
       >
@@ -65,6 +75,7 @@ export function ProjectActions({
           type="button"
           onClick={support}
           aria-pressed={supported}
+          disabled={pending}
           className={buttonClass(
             'secondary',
             'md',

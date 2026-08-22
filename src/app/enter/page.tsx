@@ -37,10 +37,10 @@ export default async function EnterPage({
         <Container className="flex flex-col gap-5 py-10 sm:py-14">
           <Label>Enter</Label>
           <h1 className="max-w-3xl text-[34px] font-semibold leading-[0.95] tracking-headline sm:text-5xl lg:text-6xl">
-            Put your project in the Arena.
+            Enter the Arena
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-bone-dim sm:text-base">
-            Any internet project. AI, SaaS, games, apps, open source, tools, communities, experiments.
+            Put your project in front of people looking for something worth discovering.
           </p>
           {canceled ? (
             <div className="flex items-center gap-2.5 border border-arena/30 bg-arena/[0.06] px-3 py-2.5">

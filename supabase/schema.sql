@@ -1,342 +1,270 @@
--- Project Arena — production schema.
--- Run once against a fresh Supabase project (SQL Editor or `psql`), then supabase/seed.sql.
+-- Project Arena — Phase 1 production schema.
+-- Run on a fresh Supabase project, then run supabase/seed.sql.
 
 create extension if not exists pgcrypto;
-create extension if not exists citext;
-
--- ---------------------------------------------------------------- enums
 
 do $$ begin
-  create type arena_status as enum ('upcoming', 'live', 'ended');
+  create type public.arena_status as enum ('upcoming', 'live', 'finished');
 exception when duplicate_object then null;
 end $$;
 
--- Mirrors PROJECT_CATEGORIES in src/lib/types.ts, value for value.
 do $$ begin
-  create type project_category as enum (
-    'AI', 'SaaS', 'Game', 'Mobile', 'Open Source', 'Dev Tool',
-    'Design', 'Web3', 'Creator', 'Community', 'Experiment'
+  create type public.project_category as enum (
+    'AI', 'SaaS', 'Games', 'Developer', 'Open Source', 'Design',
+    'Mobile', 'Web3', 'Creator', 'Community', 'Other'
   );
 exception when duplicate_object then null;
 end $$;
 
--- ---------------------------------------------------------------- tables
-
-create table if not exists public.builders (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid unique references auth.users (id) on delete cascade,
-  handle citext not null unique,
-  display_name text not null,
-  avatar_url text,
-  -- Set by the Stripe webhook, which knows an email but no auth user. Never granted to anon.
-  contact_email citext unique,
-  created_at timestamptz not null default now()
-);
-
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
-  slug text not null unique,
-  name text not null,
-  tagline text not null default '',
-  description text not null default '',
-  url text not null,
-  category project_category not null default 'Experiment',
+  name text not null check (char_length(name) between 1 and 60),
+  slug text not null unique check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+  tagline text not null default '' check (char_length(tagline) <= 140),
+  description text not null default '' check (char_length(description) <= 1200),
   logo_url text,
-  builder_id uuid references public.builders (id) on delete set null,
-  arena_rating int not null default 1200,
-  appearances int not null default 0,
-  wins int not null default 0,
-  podiums int not null default 0,
-  total_supporters int not null default 0,
-  total_clicks int not null default 0,
+  website_url text not null,
+  x_url text,
+  github_url text,
+  category public.project_category not null default 'Other',
+  builder_email text not null,
+  status text not null default 'active' check (status in ('pending', 'active', 'rejected')),
+  arena_rating integer not null default 1200 check (arena_rating >= 0),
+  total_supporters integer not null default 0 check (total_supporters >= 0),
+  total_project_visits integer not null default 0 check (total_project_visits >= 0),
+  arena_appearances integer not null default 0 check (arena_appearances >= 0),
+  championships integer not null default 0 check (championships >= 0),
+  highest_rank integer,
   created_at timestamptz not null default now()
 );
 
 create table if not exists public.arenas (
   id uuid primary key default gen_random_uuid(),
-  slug text not null unique,
-  number int not null,
   name text not null,
-  theme text not null default '',
-  status arena_status not null default 'upcoming',
+  slug text not null unique check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+  number integer not null,
+  description text not null default '',
   starts_at timestamptz not null,
   ends_at timestamptz not null,
-  entry_fee_cents int not null default 0,
-  entrant_cap int not null default 48,
-  spectators int not null default 0,
-  visits int not null default 0,
-  prize text not null default '',
+  status public.arena_status not null default 'upcoming',
+  max_entries integer not null default 32 check (max_entries > 0),
+  entry_price integer not null default 0 check (entry_price >= 0),
+  spectators integer not null default 0 check (spectators >= 0),
   created_at timestamptz not null default now(),
-  constraint arenas_window_check check (ends_at > starts_at)
+  constraint arenas_valid_window check (ends_at > starts_at)
 );
 
-create table if not exists public.entries (
+create table if not exists public.arena_entries (
   id uuid primary key default gen_random_uuid(),
   arena_id uuid not null references public.arenas (id) on delete cascade,
   project_id uuid not null references public.projects (id) on delete cascade,
-  -- True once entry is confirmed: Stripe paid, or a zero-fee Arena. Pending rows never reach a board.
-  paid boolean not null default false,
-  stripe_session_id text unique,
-  supporters int not null default 0,
-  clicks int not null default 0,
-  score int generated always as (supporters * 3 + clicks) stored,
-  final_rank int,
-  created_at timestamptz not null default now(),
+  status text not null default 'confirmed' check (status in ('pending', 'confirmed', 'disqualified')),
+  supporter_count integer not null default 0 check (supporter_count >= 0),
+  unique_visit_count integer not null default 0 check (unique_visit_count >= 0),
+  -- Phase 1 formula: 1 supporter = 1 point; 1 unique outbound visit = 2 points.
+  score integer generated always as (supporter_count + (unique_visit_count * 2)) stored,
+  final_rank integer,
+  payment_reference text unique,
+  joined_at timestamptz not null default now(),
   unique (arena_id, project_id)
 );
 
 create table if not exists public.supports (
   id uuid primary key default gen_random_uuid(),
-  entry_id uuid not null references public.entries (id) on delete cascade,
-  visitor_hash text not null,
+  arena_id uuid not null references public.arenas (id) on delete cascade,
+  project_id uuid not null references public.projects (id) on delete cascade,
+  visitor_id uuid not null,
   created_at timestamptz not null default now(),
-  unique (entry_id, visitor_hash)
+  unique (arena_id, project_id, visitor_id)
 );
 
-create table if not exists public.clicks (
+create table if not exists public.outbound_visits (
   id uuid primary key default gen_random_uuid(),
-  -- Null when a Project is clicked outside an Arena context (profile page).
-  entry_id uuid references public.entries (id) on delete cascade,
+  arena_id uuid references public.arenas (id) on delete cascade,
   project_id uuid not null references public.projects (id) on delete cascade,
-  visitor_hash text not null,
+  visitor_id uuid not null,
   created_at timestamptz not null default now()
 );
 
--- ---------------------------------------------------------------- indexes
+create unique index if not exists outbound_visits_arena_unique_idx
+  on public.outbound_visits (arena_id, project_id, visitor_id)
+  where arena_id is not null;
+create unique index if not exists outbound_visits_profile_unique_idx
+  on public.outbound_visits (project_id, visitor_id)
+  where arena_id is null;
+create index if not exists arena_entries_score_idx
+  on public.arena_entries (arena_id, score desc, supporter_count desc);
+create index if not exists arena_entries_project_idx on public.arena_entries (project_id);
+create index if not exists supports_project_idx on public.supports (arena_id, project_id);
+create index if not exists outbound_visits_project_idx on public.outbound_visits (arena_id, project_id);
 
-create index if not exists entries_arena_score_idx on public.entries (arena_id, score desc);
-create index if not exists entries_project_idx on public.entries (project_id);
-create index if not exists projects_slug_idx on public.projects (slug);
-create index if not exists arenas_slug_idx on public.arenas (slug);
-create index if not exists arenas_status_idx on public.arenas (status);
-create index if not exists clicks_entry_idx on public.clicks (entry_id);
-
--- ---------------------------------------------------------------- standings view
-
-create or replace view public.arena_standings as
+create or replace view public.arena_standings
+with (security_invoker = true)
+as
 select
-  e.id as entry_id,
-  e.arena_id,
+  ae.id as entry_id,
+  ae.arena_id,
   a.slug as arena_slug,
   a.status as arena_status,
-  e.project_id,
+  ae.project_id,
   p.slug as project_slug,
   p.name as project_name,
   p.tagline,
-  p.url,
-  p.category,
+  p.description,
   p.logo_url,
+  p.website_url,
+  p.x_url,
+  p.github_url,
+  p.category,
   p.arena_rating,
-  p.builder_id,
-  e.supporters,
-  e.clicks,
-  e.score,
-  e.final_rank,
-  rank() over (partition by e.arena_id order by e.score desc, e.supporters desc) as rank,
-  round(100.0 * e.score / nullif(sum(e.score) over (partition by e.arena_id), 0), 1) as share
-from public.entries e
-join public.projects p on p.id = e.project_id
-join public.arenas a on a.id = e.arena_id
-where e.paid;
+  p.total_supporters,
+  p.total_project_visits,
+  p.arena_appearances,
+  p.championships,
+  p.highest_rank,
+  ae.supporter_count,
+  ae.unique_visit_count,
+  ae.score,
+  ae.final_rank,
+  rank() over (
+    partition by ae.arena_id
+    order by ae.score desc, ae.supporter_count desc, ae.joined_at asc
+  ) as rank,
+  round(100.0 * ae.score / nullif(sum(ae.score) over (partition by ae.arena_id), 0), 1) as score_share
+from public.arena_entries ae
+join public.projects p on p.id = ae.project_id
+join public.arenas a on a.id = ae.arena_id
+where ae.status = 'confirmed' and p.status = 'active';
 
--- Views are not RLS targets; security_invoker makes the base-table policies apply to the caller.
-alter view public.arena_standings set (security_invoker = on);
-
--- ---------------------------------------------------------------- row level security
-
-alter table public.builders enable row level security;
 alter table public.projects enable row level security;
-alter table public.arenas  enable row level security;
-alter table public.entries enable row level security;
+alter table public.arenas enable row level security;
+alter table public.arena_entries enable row level security;
 alter table public.supports enable row level security;
-alter table public.clicks  enable row level security;
+alter table public.outbound_visits enable row level security;
 
-drop policy if exists "builders are public" on public.builders;
-create policy "builders are public"
-  on public.builders for select
-  using (true);
-
-drop policy if exists "builders insert own row" on public.builders;
-create policy "builders insert own row"
-  on public.builders for insert to authenticated
-  with check (auth.uid() = user_id);
-
-drop policy if exists "builders update own row" on public.builders;
-create policy "builders update own row"
-  on public.builders for update to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
-
-drop policy if exists "projects are public" on public.projects;
-create policy "projects are public"
-  on public.projects for select
-  using (true);
-
-drop policy if exists "builders insert own projects" on public.projects;
-create policy "builders insert own projects"
-  on public.projects for insert to authenticated
-  with check (
-    exists (select 1 from public.builders b where b.id = projects.builder_id and b.user_id = auth.uid())
-  );
-
-drop policy if exists "builders update own projects" on public.projects;
-create policy "builders update own projects"
-  on public.projects for update to authenticated
-  using (
-    exists (select 1 from public.builders b where b.id = projects.builder_id and b.user_id = auth.uid())
-  )
-  with check (
-    exists (select 1 from public.builders b where b.id = projects.builder_id and b.user_id = auth.uid())
-  );
-
+drop policy if exists "active projects are public" on public.projects;
+create policy "active projects are public" on public.projects
+  for select to anon, authenticated using (status = 'active');
 drop policy if exists "arenas are public" on public.arenas;
-create policy "arenas are public"
-  on public.arenas for select
-  using (true);
-
-drop policy if exists "entries are public" on public.entries;
-create policy "entries are public"
-  on public.entries for select
-  using (true);
-
--- Raw signal is write-only to the public: anyone may add one, nobody may read the log.
--- The service role bypasses RLS and remains the only reader.
-drop policy if exists "anyone may support" on public.supports;
-create policy "anyone may support"
-  on public.supports for insert to anon, authenticated
-  with check (true);
-
-drop policy if exists "anyone may click" on public.clicks;
-create policy "anyone may click"
-  on public.clicks for insert to anon, authenticated
-  with check (true);
-
--- ---------------------------------------------------------------- grants
+create policy "arenas are public" on public.arenas
+  for select to anon, authenticated using (true);
+drop policy if exists "confirmed entries are public" on public.arena_entries;
+create policy "confirmed entries are public" on public.arena_entries
+  for select to anon, authenticated using (status = 'confirmed');
 
 grant usage on schema public to anon, authenticated;
-
--- Supabase grants every new public table to anon/authenticated by default. Reset, then
--- re-grant exactly what each role needs — RLS gates rows, these gate tables and columns.
-revoke all on public.builders, public.projects, public.arenas,
-              public.entries, public.supports, public.clicks
-  from anon, authenticated;
-
-grant select on public.projects, public.arenas, public.entries, public.arena_standings to anon, authenticated;
--- Column list is what keeps contact_email out of every public read.
-grant select (id, user_id, handle, display_name, avatar_url, created_at) on public.builders to anon, authenticated;
-grant insert on public.supports, public.clicks to anon, authenticated;
-grant insert, update on public.projects to authenticated;
-grant insert (user_id, handle, display_name, avatar_url) on public.builders to authenticated;
-grant update (handle, display_name, avatar_url) on public.builders to authenticated;
-
--- ---------------------------------------------------------------- helpers
+revoke all on public.projects, public.arenas, public.arena_entries,
+  public.supports, public.outbound_visits from anon, authenticated;
+grant select (
+  id, name, slug, tagline, description, logo_url, website_url, x_url, github_url,
+  category, status, arena_rating, total_supporters, total_project_visits,
+  arena_appearances, championships, highest_rank, created_at
+) on public.projects to anon, authenticated;
+grant select on public.arenas, public.arena_entries, public.arena_standings to anon, authenticated;
 
 create or replace function public.slugify(p_text text)
-returns text
-language sql
-immutable
-as $$
+returns text language sql immutable set search_path = '' as $$
   select nullif(trim(both '-' from regexp_replace(lower(coalesce(p_text, '')), '[^a-z0-9]+', '-', 'g')), '');
 $$;
 
--- One identity per signed-in user, else per caller IP. Coarse on purpose: it exists to
--- stop trivial double-counting, not to fingerprint anyone.
-create or replace function public.visitor_hash()
-returns text
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select md5(coalesce(
-    auth.uid()::text,
-    nullif(current_setting('request.headers', true), '')::json ->> 'x-forwarded-for',
-    'anonymous'
-  ));
-$$;
-
--- ---------------------------------------------------------------- rpc: POST /api/support
-
-create or replace function public.record_support(p_project_slug text, p_arena_slug text)
-returns void
+create or replace function public.record_support(
+  p_project_slug text,
+  p_arena_slug text,
+  p_visitor_id uuid
+)
+returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
-  v_entry_id uuid;
+  v_arena_id uuid;
   v_project_id uuid;
-  v_rows int;
+  v_entry_id uuid;
+  v_inserted integer;
 begin
-  select e.id, e.project_id
-    into v_entry_id, v_project_id
-  from public.entries e
-  join public.projects p on p.id = e.project_id
-  join public.arenas a on a.id = e.arena_id
-  where p.slug = p_project_slug
-    and a.slug = p_arena_slug
+  select a.id, p.id, ae.id
+    into v_arena_id, v_project_id, v_entry_id
+  from public.arena_entries ae
+  join public.arenas a on a.id = ae.arena_id
+  join public.projects p on p.id = ae.project_id
+  where a.slug = p_arena_slug
+    and p.slug = p_project_slug
     and a.status = 'live'
-    and e.paid;
+    and ae.status = 'confirmed';
 
   if v_entry_id is null then
-    raise exception 'no live entry for project % in arena %', p_project_slug, p_arena_slug;
+    raise exception 'project is not competing in this live Arena';
   end if;
 
-  insert into public.supports (entry_id, visitor_hash)
-  values (v_entry_id, public.visitor_hash())
-  on conflict (entry_id, visitor_hash) do nothing;
+  insert into public.supports (arena_id, project_id, visitor_id)
+  values (v_arena_id, v_project_id, p_visitor_id)
+  on conflict (arena_id, project_id, visitor_id) do nothing;
+  get diagnostics v_inserted = row_count;
 
-  get diagnostics v_rows = row_count;
-  if v_rows = 0 then
-    return; -- already supported; counters stay put
+  if v_inserted = 0 then
+    return jsonb_build_object('duplicate', true);
   end if;
 
-  update public.entries set supporters = supporters + 1 where id = v_entry_id;
-  update public.projects set total_supporters = total_supporters + 1 where id = v_project_id;
+  update public.arena_entries
+    set supporter_count = supporter_count + 1
+    where id = v_entry_id;
+  update public.projects
+    set total_supporters = total_supporters + 1
+    where id = v_project_id;
+
+  return jsonb_build_object('duplicate', false);
 end;
 $$;
 
--- ---------------------------------------------------------------- rpc: POST /api/click
-
-create or replace function public.record_click(p_project_slug text, p_arena_slug text default null)
-returns void
+create or replace function public.record_outbound_visit(
+  p_project_slug text,
+  p_arena_slug text default null,
+  p_visitor_id uuid default null
+)
+returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
+  v_arena_id uuid;
   v_project_id uuid;
   v_entry_id uuid;
-  v_arena_id uuid;
+  v_inserted integer;
 begin
-  select id into v_project_id from public.projects where slug = p_project_slug;
-
-  if v_project_id is null then
-    raise exception 'unknown project %', p_project_slug;
-  end if;
+  if p_visitor_id is null then raise exception 'visitor id is required'; end if;
+  select id into v_project_id from public.projects where slug = p_project_slug and status = 'active';
+  if v_project_id is null then raise exception 'unknown project'; end if;
 
   if p_arena_slug is not null then
-    select e.id, e.arena_id
-      into v_entry_id, v_arena_id
-    from public.entries e
-    join public.arenas a on a.id = e.arena_id
-    where e.project_id = v_project_id and a.slug = p_arena_slug and e.paid;
+    select a.id, ae.id into v_arena_id, v_entry_id
+    from public.arenas a
+    join public.arena_entries ae on ae.arena_id = a.id
+    where a.slug = p_arena_slug
+      and a.status = 'live'
+      and ae.project_id = v_project_id
+      and ae.status = 'confirmed';
   end if;
 
-  -- Clicks are not deduplicated: every outbound visit counts.
-  insert into public.clicks (entry_id, project_id, visitor_hash)
-  values (v_entry_id, v_project_id, public.visitor_hash());
+  insert into public.outbound_visits (arena_id, project_id, visitor_id)
+  values (v_arena_id, v_project_id, p_visitor_id)
+  on conflict do nothing;
+  get diagnostics v_inserted = row_count;
+  if v_inserted = 0 then return jsonb_build_object('duplicate', true); end if;
 
-  update public.projects set total_clicks = total_clicks + 1 where id = v_project_id;
-
+  update public.projects
+    set total_project_visits = total_project_visits + 1
+    where id = v_project_id;
   if v_entry_id is not null then
-    update public.entries set clicks = clicks + 1 where id = v_entry_id;
-    update public.arenas set visits = visits + 1 where id = v_arena_id;
+    update public.arena_entries
+      set unique_visit_count = unique_visit_count + 1
+      where id = v_entry_id;
   end if;
+
+  return jsonb_build_object('duplicate', false);
 end;
 $$;
-
--- ---------------------------------------------------------------- rpc: POST /api/stripe/webhook
 
 create or replace function public.create_paid_entry(
   p_arena_slug text,
@@ -345,178 +273,111 @@ create or replace function public.create_paid_entry(
   p_tagline text,
   p_category text,
   p_description text,
+  p_logo_url text,
+  p_x_url text,
+  p_github_url text,
   p_email text,
   p_stripe_session_id text
 )
 returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
-  v_entry_id uuid;
   v_arena_id uuid;
-  v_status arena_status;
-  v_cap int;
-  v_entrants int;
-  v_builder_id uuid;
-  v_handle text;
   v_project_id uuid;
+  v_entry_id uuid;
   v_slug text;
-  v_category project_category;
+  v_count integer;
 begin
-  -- Idempotent: Stripe redelivers checkout.session.completed on any non-2xx.
-  select id into v_entry_id from public.entries where stripe_session_id = p_stripe_session_id;
-  if v_entry_id is not null then
-    return v_entry_id;
-  end if;
+  select id into v_entry_id from public.arena_entries where payment_reference = p_stripe_session_id;
+  if v_entry_id is not null then return v_entry_id; end if;
 
-  select id, status, entrant_cap into v_arena_id, v_status, v_cap
-  from public.arenas where slug = p_arena_slug;
+  select id into v_arena_id from public.arenas
+  where slug = p_arena_slug and status in ('upcoming', 'live');
+  if v_arena_id is null then raise exception 'Arena is not open for entries'; end if;
 
-  if v_arena_id is null then
-    raise exception 'unknown arena %', p_arena_slug;
+  select count(*) into v_count from public.arena_entries
+  where arena_id = v_arena_id and status = 'confirmed';
+  if v_count >= (select max_entries from public.arenas where id = v_arena_id) then
+    raise exception 'Arena is full';
   end if;
-  if v_status = 'ended' then
-    raise exception 'arena % has ended', p_arena_slug;
-  end if;
-
-  select count(*) into v_entrants from public.entries where arena_id = v_arena_id and paid;
-  if v_entrants >= v_cap then
-    raise exception 'arena % is full', p_arena_slug;
-  end if;
-
-  v_category := case
-    when p_category = any (enum_range(null::project_category)::text[]) then p_category::project_category
-    else 'Experiment'::project_category
-  end;
 
   v_slug := public.slugify(p_project_name);
-  if v_slug is null then
-    raise exception 'project name % produces no slug', p_project_name;
+  if exists (select 1 from public.projects where slug = v_slug and lower(builder_email) <> lower(p_email)) then
+    v_slug := v_slug || '-' || substr(md5(p_stripe_session_id), 1, 5);
   end if;
 
-  if coalesce(p_email, '') <> '' then
-    select id into v_builder_id from public.builders where contact_email = lower(p_email);
-
-    if v_builder_id is null then
-      v_handle := coalesce(public.slugify(split_part(p_email, '@', 1)), 'builder');
-      if exists (select 1 from public.builders where handle = v_handle) then
-        v_handle := v_handle || '-' || substr(md5(lower(p_email)), 1, 4);
-      end if;
-
-      insert into public.builders (handle, display_name, contact_email)
-      values (v_handle, initcap(replace(v_handle, '-', ' ')), lower(p_email))
-      returning id into v_builder_id;
-    end if;
-  end if;
-
-  insert into public.projects (slug, name, tagline, description, url, category, builder_id)
-  values (v_slug, p_project_name, coalesce(p_tagline, ''), coalesce(p_description, ''), p_project_url, v_category, v_builder_id)
-  on conflict (slug) do update
-    set name = excluded.name,
-        tagline = excluded.tagline,
-        description = case when excluded.description = '' then projects.description else excluded.description end,
-        url = excluded.url,
-        category = excluded.category
-    where projects.builder_id is not distinct from excluded.builder_id
+  insert into public.projects (
+    name, slug, tagline, description, logo_url, website_url, x_url, github_url,
+    category, builder_email, status
+  ) values (
+    p_project_name, v_slug, p_tagline, coalesce(p_description, ''), nullif(p_logo_url, ''),
+    p_project_url, nullif(p_x_url, ''), nullif(p_github_url, ''),
+    case when p_category = any(enum_range(null::public.project_category)::text[])
+      then p_category::public.project_category else 'Other'::public.project_category end,
+    lower(p_email), 'active'
+  )
+  on conflict (slug) do update set
+    tagline = excluded.tagline,
+    description = excluded.description,
+    logo_url = coalesce(excluded.logo_url, projects.logo_url),
+    website_url = excluded.website_url,
+    x_url = excluded.x_url,
+    github_url = excluded.github_url,
+    category = excluded.category
+  where lower(projects.builder_email) = lower(excluded.builder_email)
   returning id into v_project_id;
 
-  if v_project_id is null then
-    -- Slug already belongs to another Builder: mint a distinct one rather than overwrite.
-    v_slug := v_slug || '-' || substr(md5(p_stripe_session_id), 1, 4);
-    insert into public.projects (slug, name, tagline, description, url, category, builder_id)
-    values (v_slug, p_project_name, coalesce(p_tagline, ''), coalesce(p_description, ''), p_project_url, v_category, v_builder_id)
-    returning id into v_project_id;
-  end if;
+  if v_project_id is null then raise exception 'Project slug belongs to another Builder'; end if;
 
-  insert into public.entries (arena_id, project_id, paid, stripe_session_id)
-  values (v_arena_id, v_project_id, true, p_stripe_session_id)
+  insert into public.arena_entries (arena_id, project_id, status, payment_reference)
+  values (v_arena_id, v_project_id, 'confirmed', p_stripe_session_id)
   on conflict (arena_id, project_id) do update
-    set paid = true,
-        stripe_session_id = coalesce(entries.stripe_session_id, excluded.stripe_session_id)
+    set status = 'confirmed', payment_reference = excluded.payment_reference
   returning id into v_entry_id;
-
   return v_entry_id;
 end;
 $$;
-
--- ---------------------------------------------------------------- rpc: close an Arena
 
 create or replace function public.finalize_arena(p_arena_slug text)
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_arena_id uuid;
-  v_status arena_status;
-  v_entrants int;
-  v_delta int;
-  r record;
 begin
-  select id, status into v_arena_id, v_status from public.arenas where slug = p_arena_slug;
+  select id into v_arena_id from public.arenas where slug = p_arena_slug and status <> 'finished';
+  if v_arena_id is null then return; end if;
 
-  if v_arena_id is null then
-    raise exception 'unknown arena %', p_arena_slug;
-  end if;
-  if v_status = 'ended' then
-    return; -- already settled; ratings must never be applied twice
-  end if;
+  update public.arena_entries ae set final_rank = ranked.rank
+  from (
+    select id, rank() over (order by score desc, supporter_count desc, joined_at asc)::integer as rank
+    from public.arena_entries where arena_id = v_arena_id and status = 'confirmed'
+  ) ranked where ae.id = ranked.id;
 
-  select count(*) into v_entrants from public.entries where arena_id = v_arena_id and paid;
+  update public.projects p set
+    arena_appearances = arena_appearances + 1,
+    championships = championships + case when ae.final_rank = 1 then 1 else 0 end,
+    highest_rank = least(coalesce(highest_rank, ae.final_rank), ae.final_rank),
+    arena_rating = greatest(100, arena_rating + case
+      when ae.final_rank = 1 then 32 when ae.final_rank <= 3 then 20
+      when ae.final_rank <= 8 then 8 else -4 end)
+  from public.arena_entries ae
+  where ae.project_id = p.id and ae.arena_id = v_arena_id and ae.status = 'confirmed';
 
-  if v_entrants = 0 then
-    update public.arenas set status = 'ended' where id = v_arena_id;
-    return;
-  end if;
-
-  update public.entries e
-     set final_rank = s.rank
-    from (
-      select id, rank() over (order by score desc, supporters desc) as rank
-      from public.entries
-      where arena_id = v_arena_id and paid
-    ) s
-   where e.id = s.id;
-
-  for r in
-    select project_id, final_rank
-    from public.entries
-    where arena_id = v_arena_id and paid
-  loop
-    -- Elo-ish: finishing mid-field is par, so the delta runs +32 (first) to -32 (last).
-    v_delta := round(
-      64 * (coalesce((v_entrants - r.final_rank)::numeric / nullif(v_entrants - 1, 0), 1) - 0.5)
-    );
-
-    update public.projects
-       set appearances = appearances + 1,
-           wins = wins + (case when r.final_rank = 1 then 1 else 0 end),
-           podiums = podiums + (case when r.final_rank <= 3 then 1 else 0 end),
-           arena_rating = greatest(100, arena_rating + v_delta)
-     where id = r.project_id;
-  end loop;
-
-  update public.arenas set status = 'ended' where id = v_arena_id;
+  update public.arenas set status = 'finished' where id = v_arena_id;
 end;
 $$;
 
--- ---------------------------------------------------------------- function grants
-
-revoke all on function public.record_support(text, text) from public;
-revoke all on function public.record_click(text, text) from public;
-revoke all on function public.create_paid_entry(text, text, text, text, text, text, text, text) from public;
+revoke all on function public.record_support(text, text, uuid) from public;
+revoke all on function public.record_outbound_visit(text, text, uuid) from public;
+revoke all on function public.create_paid_entry(text, text, text, text, text, text, text, text, text, text, text) from public;
 revoke all on function public.finalize_arena(text) from public;
-revoke all on function public.visitor_hash() from public;
-revoke all on function public.slugify(text) from public;
-
-grant execute on function public.record_support(text, text) to anon, authenticated;
-grant execute on function public.record_click(text, text) to anon, authenticated;
-grant execute on function public.slugify(text) to anon, authenticated;
-
--- Money and results: service role only, reached from the Stripe webhook and scheduled jobs.
-grant execute on function public.create_paid_entry(text, text, text, text, text, text, text, text) to service_role;
+grant execute on function public.record_support(text, text, uuid) to service_role;
+grant execute on function public.record_outbound_visit(text, text, uuid) to service_role;
+grant execute on function public.create_paid_entry(text, text, text, text, text, text, text, text, text, text, text) to service_role;
 grant execute on function public.finalize_arena(text) to service_role;
-grant execute on function public.visitor_hash() to service_role;

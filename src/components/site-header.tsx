@@ -11,7 +11,7 @@ import { cn } from '@/lib/cn';
 const NAV = [
   { href: '/arenas', label: 'Arenas' },
   { href: '/hall-of-fame', label: 'Hall of Fame' },
-  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/enter', label: 'Enter' },
 ];
 
 export function SiteHeader() {

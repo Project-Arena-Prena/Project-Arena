@@ -6,7 +6,9 @@ import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { CareerStats } from '@/components/project/career-stats';
 import { HistoryTable } from '@/components/project/history-table';
 import { ProjectActions } from '@/components/project/project-actions';
+import { ProjectLogo } from '@/components/project-logo';
 import { Reveal } from '@/components/reveal';
+import { ShareResultCard } from '@/components/share-result-card';
 import {
   ButtonLink,
   Container,
@@ -76,7 +78,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       label: 'Address',
       value: (
         <a
-          href={project.url}
+          href={`/go/${project.slug}`}
           target="_blank"
           rel="noopener noreferrer nofollow"
           className="inline-flex items-center gap-1.5 text-bone-dim transition-colors duration-200 hover:text-arena"
@@ -88,6 +90,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     },
     { label: 'First Seen', value: formatDate(project.createdAt) },
     { label: 'Builder', value: `@${project.builder.handle}` },
+    ...(project.xUrl
+      ? [{ label: 'X', value: <a className="text-bone-dim transition-colors hover:text-arena" href={project.xUrl} target="_blank" rel="noopener noreferrer">Profile ↗</a> }]
+      : []),
+    ...(project.githubUrl
+      ? [{ label: 'GitHub', value: <a className="text-bone-dim transition-colors hover:text-arena" href={project.githubUrl} target="_blank" rel="noopener noreferrer">Repository ↗</a> }]
+      : []),
   ];
 
   return (
@@ -112,6 +120,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-16">
             <Reveal className="flex min-w-0 flex-col gap-4">
+              <ProjectLogo name={project.name} logoUrl={project.logoUrl} size="lg" />
               <span className="inline-flex w-fit items-center border hairline px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-bone-dim">
                 {project.category}
               </span>
@@ -147,6 +156,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           <CareerStats project={project} />
         </Container>
       </section>
+
+      {competing ? (
+        <Container className="pt-10 sm:pt-12">
+          <ShareResultCard standing={competing.standing} arena={competing.arena} />
+        </Container>
+      ) : null}
 
       <Container className="pt-10 sm:pt-12">
         <Reveal delay={0.1} className="flex flex-col gap-10 lg:flex-row lg:gap-16">

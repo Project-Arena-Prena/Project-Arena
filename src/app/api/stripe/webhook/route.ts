@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const meta = session.metadata ?? {};
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) return NextResponse.json({ received: true, persisted: false });
 
   const admin = createSupabaseClient(url, serviceKey, { auth: { persistSession: false } });
@@ -43,8 +43,11 @@ export async function POST(request: Request) {
     p_project_name: meta.project_name ?? '',
     p_project_url: meta.project_url ?? '',
     p_tagline: meta.project_tagline ?? '',
-    p_category: meta.project_category ?? 'Experiment',
+    p_category: meta.project_category ?? 'Other',
     p_description: meta.project_description ?? '',
+    p_logo_url: '',
+    p_x_url: meta.project_x_url ?? '',
+    p_github_url: meta.project_github_url ?? '',
     p_email: session.customer_email ?? '',
     p_stripe_session_id: session.id,
   });

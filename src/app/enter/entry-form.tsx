@@ -26,7 +26,7 @@ const API_ERRORS: Record<string, string> = {
 const INPUT =
   'h-11 w-full border hairline bg-transparent px-3 text-sm text-bone placeholder:text-bone-faint transition-colors duration-200 focus:border-arena/50 focus-visible:ring-arena/70 focus-visible:ring-offset-0';
 
-type FieldKey = 'arenaSlug' | 'projectName' | 'url' | 'tagline' | 'category' | 'builderEmail';
+type FieldKey = 'arenaSlug' | 'projectName' | 'url' | 'tagline' | 'category' | 'builderEmail' | 'xUrl' | 'githubUrl';
 type Errors = Partial<Record<FieldKey, string>>;
 
 function slotsLeft(arena: Arena): number {
@@ -154,6 +154,9 @@ export function EntryForm({ arenas, initialArenaSlug }: { arenas: Arena[]; initi
   const [tagline, setTagline] = useState('');
   const [category, setCategory] = useState<ProjectCategory | ''>('');
   const [description, setDescription] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [xUrl, setXUrl] = useState('');
+  const [githubUrl, setGithubUrl] = useState('');
   const [builderEmail, setBuilderEmail] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -181,6 +184,8 @@ export function EntryForm({ arenas, initialArenaSlug }: { arenas: Arena[]; initi
     if (!category) next.category = 'Pick one category';
     if (!builderEmail.trim()) next.builderEmail = 'Email required';
     else if (!EMAIL_RE.test(builderEmail.trim())) next.builderEmail = 'Enter a valid email';
+    if (xUrl.trim() && !isHttpUrl(xUrl)) next.xUrl = 'Must be a full http(s) URL';
+    if (githubUrl.trim() && !isHttpUrl(githubUrl)) next.githubUrl = 'Must be a full http(s) URL';
     return next;
   }
 
@@ -209,6 +214,9 @@ export function EntryForm({ arenas, initialArenaSlug }: { arenas: Arena[]; initi
           url: url.trim(),
           category,
           description: description.trim() || undefined,
+          logoName: logoFile?.name,
+          xUrl: xUrl.trim() || undefined,
+          githubUrl: githubUrl.trim() || undefined,
           builderEmail: builderEmail.trim(),
         }),
       });
@@ -403,6 +411,27 @@ export function EntryForm({ arenas, initialArenaSlug }: { arenas: Arena[]; initi
               className={cn(INPUT, 'h-auto resize-none py-3 leading-relaxed')}
             />
           </Field>
+
+          <Field
+            id={`${uid}-logo`}
+            label="Logo Upload"
+            hint={<span className="num text-[10px] text-bone-faint">PNG, JPG, WEBP · 1MB</span>}
+          >
+            <label
+              htmlFor={`${uid}-logo`}
+              className="flex min-h-20 cursor-pointer items-center justify-between gap-4 border border-dashed hairline px-4 py-3 text-sm text-bone-dim transition-colors hover:border-white/30 hover:text-bone"
+            >
+              <span>{logoFile ? logoFile.name : 'Choose project mark'}</span>
+              <span className="font-mono text-[9px] uppercase tracking-widest text-arena">Browse</span>
+              <input
+                id={`${uid}-logo`}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="sr-only"
+                onChange={(event) => setLogoFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+          </Field>
         </div>
 
         <div className="flex flex-col gap-5">
@@ -427,6 +456,29 @@ export function EntryForm({ arenas, initialArenaSlug }: { arenas: Arena[]; initi
               className={cn(INPUT, 'font-mono text-[13px]', errors.builderEmail && 'border-arena/50')}
             />
           </Field>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field id={`${uid}-x`} label="X URL" error={errors.xUrl} hint={<span className="num text-[10px] text-bone-faint">Optional</span>}>
+              <input
+                id={`${uid}-x`}
+                value={xUrl}
+                onChange={(event) => { setXUrl(event.target.value); clear('xUrl'); }}
+                inputMode="url"
+                placeholder="https://x.com/"
+                className={cn(INPUT, 'font-mono text-[13px]', errors.xUrl && 'border-arena/50')}
+              />
+            </Field>
+            <Field id={`${uid}-github`} label="GitHub URL" error={errors.githubUrl} hint={<span className="num text-[10px] text-bone-faint">Optional</span>}>
+              <input
+                id={`${uid}-github`}
+                value={githubUrl}
+                onChange={(event) => { setGithubUrl(event.target.value); clear('githubUrl'); }}
+                inputMode="url"
+                placeholder="https://github.com/"
+                className={cn(INPUT, 'font-mono text-[13px]', errors.githubUrl && 'border-arena/50')}
+              />
+            </Field>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">

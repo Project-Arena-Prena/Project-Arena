@@ -1,30 +1,30 @@
-export type ArenaStatus = 'upcoming' | 'live' | 'ended';
+export type ArenaStatus = 'upcoming' | 'live' | 'finished';
 
 export type ProjectCategory =
   | 'AI'
   | 'SaaS'
-  | 'Game'
+  | 'Games'
   | 'Mobile'
   | 'Open Source'
-  | 'Dev Tool'
+  | 'Developer'
   | 'Design'
   | 'Web3'
   | 'Creator'
   | 'Community'
-  | 'Experiment';
+  | 'Other';
 
 export const PROJECT_CATEGORIES: ProjectCategory[] = [
   'AI',
   'SaaS',
-  'Game',
+  'Games',
   'Mobile',
   'Open Source',
-  'Dev Tool',
+  'Developer',
   'Design',
   'Web3',
   'Creator',
   'Community',
-  'Experiment',
+  'Other',
 ];
 
 export interface Builder {
@@ -43,6 +43,8 @@ export interface Project {
   url: string;
   category: ProjectCategory;
   logoUrl: string | null;
+  xUrl: string | null;
+  githubUrl: string | null;
   builder: Builder;
   arenaRating: number;
   appearances: number;

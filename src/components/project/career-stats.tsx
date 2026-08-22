@@ -8,6 +8,7 @@ interface Cell {
   value: string;
   tone: string;
   lead?: boolean;
+  suffix?: string;
 }
 
 function tone(n: number): string {
@@ -16,7 +17,7 @@ function tone(n: number): string {
 
 export function CareerStats({ project }: { project: Project }) {
   const cells: Cell[] = [
-    { label: 'Arena Rating', value: formatNumber(project.arenaRating), tone: 'text-bone', lead: true },
+    { label: 'Arena Rating', value: formatNumber(project.arenaRating), tone: 'text-bone', lead: true, suffix: 'Top 8%' },
     { label: 'Appearances', value: formatNumber(project.appearances), tone: tone(project.appearances) },
     { label: 'Wins', value: formatNumber(project.wins), tone: project.wins > 0 ? 'text-gold' : 'text-bone-faint' },
     { label: 'Podiums', value: formatNumber(project.podiums), tone: tone(project.podiums) },
@@ -45,6 +46,7 @@ export function CareerStats({ project }: { project: Project }) {
             >
               {cell.value}
             </span>
+            {cell.suffix ? <span className="font-mono text-[9px] uppercase tracking-widest text-arena">{cell.suffix}</span> : null}
           </div>
         ))}
       </div>

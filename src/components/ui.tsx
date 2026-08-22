@@ -73,7 +73,7 @@ export function LiveDot({ className }: { className?: string }) {
   );
 }
 
-export function StatusBadge({ status }: { status: 'live' | 'upcoming' | 'ended' }) {
+export function StatusBadge({ status }: { status: 'live' | 'upcoming' | 'finished' }) {
   if (status === 'live') {
     return (
       <span className="inline-flex items-center gap-1.5 border border-live/30 bg-live/10 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-live">
@@ -91,7 +91,7 @@ export function StatusBadge({ status }: { status: 'live' | 'upcoming' | 'ended' 
   }
   return (
     <span className="inline-flex items-center gap-1.5 border border-white/10 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-bone-faint">
-      Ended
+        Finished
     </span>
   );
 }

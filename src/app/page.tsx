@@ -49,14 +49,16 @@ export default async function HomePage() {
     getArenas(),
     getTopRatedProjects(8),
   ]);
-  const standings = arena ? await getStandings(arena.slug, 10) : [];
+  const allStandings = arena ? await getStandings(arena.slug) : [];
+  const standings = allStandings.slice(0, 5);
+  const supporterCount = allStandings.reduce((total, row) => total + row.supporters, 0);
 
   const liveCells = arena
     ? [
-        { label: 'Projects', value: formatNumber(arena.entrantCount), sub: `Cap ${arena.entrantCap}` },
-        { label: 'Spectators', value: formatNumber(arena.spectators), sub: 'This Arena' },
+        { label: 'Projects', value: formatNumber(arena.entrantCount), sub: 'Competing now' },
+        { label: 'Supporters', value: formatNumber(supporterCount), sub: 'Unique support' },
         { label: 'Project visits', value: formatNumber(arena.visits), sub: 'Outbound' },
-        { label: 'Entry', value: formatMoney(arena.entryFeeCents), sub: 'Per project' },
+        { label: 'Spectators', value: formatNumber(arena.spectators), sub: 'Watching live' },
       ]
     : [];
 
@@ -74,16 +76,16 @@ export default async function HomePage() {
           </Reveal>
 
           <Reveal delay={0.06}>
-            <h1 className="mt-6 font-mono text-[clamp(1.7rem,7vw,84px)] font-semibold uppercase leading-[0.95] tracking-[0.14em] text-bone sm:tracking-[0.2em] lg:tracking-[0.26em]">
-              Project Arena
+            <h1 className="mt-6 max-w-5xl text-[clamp(3rem,8vw,92px)] font-semibold uppercase leading-[0.88] tracking-[-0.06em] text-bone">
+              <span className="block">The internet is building.</span>
+              <span className="mt-2 block text-bone-dim">See what&apos;s winning.</span>
             </h1>
           </Reveal>
 
           <Reveal delay={0.12}>
-            <div className="mt-10 flex flex-col text-4xl font-semibold tracking-headline sm:text-5xl lg:text-[56px] lg:leading-[1.06]">
-              <span className="text-bone-dim">The internet is building.</span>
-              <span className="text-bone">See what&apos;s winning.</span>
-            </div>
+            <p className="mt-8 max-w-2xl text-base leading-relaxed text-bone-dim sm:text-lg">
+              Discover projects competing for attention, support the ones you believe in, or enter your own.
+            </p>
           </Reveal>
 
           <Reveal delay={0.18}>
@@ -171,7 +173,7 @@ export default async function HomePage() {
 
                 <div className="flex items-center justify-between px-4 py-3">
                   <Label>Live standings</Label>
-                  <Label>Top 10 of {formatNumber(arena.entrantCount)}</Label>
+                  <Label>Top 5 of {formatNumber(arena.entrantCount)}</Label>
                 </div>
 
                 <Leaderboard standings={standings} arenaSlug={arena.slug} live />
