@@ -1,0 +1,13 @@
+import Stripe from 'stripe';
+
+const key = process.env.STRIPE_SECRET_KEY;
+
+// No pinned apiVersion: the SDK's own default always matches its typings.
+export const stripe = key ? new Stripe(key) : null;
+
+export function siteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return explicit.replace(/\/$/, '');
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return 'http://localhost:3000';
+}
