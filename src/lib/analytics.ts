@@ -12,7 +12,21 @@ export type ProductEvent =
   | 'ranking_shared'
   | 'result_viewed'
   | 'next_arena_clicked'
-  | 'repeat_entry_completed';
+  | 'repeat_entry_completed'
+  // Phase 3 — $PRENA utility layer.
+  | 'wallet_connect_started'
+  | 'wallet_connected'
+  | 'wallet_link_failed'
+  | 'wallet_unlinked'
+  | 'prena_entry_selected'
+  | 'prena_quote_created'
+  | 'prena_payment_started'
+  | 'prena_payment_confirmed'
+  | 'prena_payment_failed'
+  | 'reward_viewed'
+  | 'reward_claim_started'
+  | 'reward_claimed'
+  | 'next_arena_entered_with_prena';
 
 export async function trackEvent(
   name: ProductEvent | string,

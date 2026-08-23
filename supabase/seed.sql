@@ -84,3 +84,65 @@ select a.id, p.id, 'approved'
 from public.projects p cross join public.arenas a
 where a.slug = 'open-arena-002'
 on conflict (arena_id, project_id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Phase 3 — $PRENA. Enables the token entry path and a reward pool on the
+-- example Arenas so the flow is visible in a fresh environment.
+-- Run supabase/migrations/004_phase3_prena.sql (or the full schema) first.
+-- ---------------------------------------------------------------------------
+
+update public.arenas
+  set prena_payment_enabled = true,
+      prena_discount_percent = 17
+  where slug in ('open-arena-001', 'open-arena-002');
+
+update public.arenas
+  set reward_pool_enabled = true
+  where slug in ('open-arena-002', 'launch-arena-000');
+
+insert into public.arena_reward_pools (arena_id, token_symbol, total_amount, status)
+select a.id, 'PRENA', 50000, 'announced'
+from public.arenas a
+where a.slug = 'open-arena-002'
+on conflict (arena_id) do update set
+  total_amount = excluded.total_amount,
+  status = excluded.status;
+
+insert into public.arena_reward_pools (arena_id, token_symbol, total_amount, status)
+select a.id, 'PRENA', 20000, 'announced'
+from public.arenas a
+where a.slug = 'launch-arena-000'
+on conflict (arena_id) do update set
+  total_amount = excluded.total_amount,
+  status = excluded.status;
+
+-- 20,000 + 10,000 + 6,000 + 8,000 + 6,000 = 50,000.
+delete from public.arena_reward_tiers t
+using public.arena_reward_pools p, public.arenas a
+where t.reward_pool_id = p.id and p.arena_id = a.id and a.slug in ('open-arena-002', 'launch-arena-000');
+
+insert into public.arena_reward_tiers
+  (reward_pool_id, reward_type, label, rank_start, rank_end, amount, distribution, position)
+select p.id, v.reward_type, v.label, v.rank_start, v.rank_end, v.amount, v.distribution, v.position
+from public.arena_reward_pools p
+join public.arenas a on a.id = p.arena_id
+cross join (values
+  ('champion', 'Champion', 1, 1, 20000, 'each', 0),
+  ('rank', '#2', 2, 2, 10000, 'each', 1),
+  ('rank', '#3', 3, 3, 6000, 'each', 2),
+  ('rank', 'Top 10', 4, 10, 8000, 'split', 3),
+  ('community', 'Community rewards', null, null, 6000, 'split', 4)
+) as v(reward_type, label, rank_start, rank_end, amount, distribution, position)
+where a.slug = 'open-arena-002';
+
+insert into public.arena_reward_tiers
+  (reward_pool_id, reward_type, label, rank_start, rank_end, amount, distribution, position)
+select p.id, v.reward_type, v.label, v.rank_start, v.rank_end, v.amount, v.distribution, v.position
+from public.arena_reward_pools p
+join public.arenas a on a.id = p.arena_id
+cross join (values
+  ('champion', 'Champion', 1, 1, 10000, 'each', 0),
+  ('rank', '#2', 2, 2, 5000, 'each', 1),
+  ('rank', 'Top 8', 3, 8, 5000, 'split', 2)
+) as v(reward_type, label, rank_start, rank_end, amount, distribution, position)
+where a.slug = 'launch-arena-000';

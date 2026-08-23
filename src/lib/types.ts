@@ -107,6 +107,12 @@ export interface Arena {
   eligibilityText: string;
   scoringConfig: ArenaScoringConfig;
   entryFeeCents: number;
+  /** $PRENA entry is offered only when the Arena enables it. Never assumed. */
+  prenaPaymentEnabled: boolean;
+  /** Whole-percent discount applied to the USD price when paying in $PRENA. */
+  prenaDiscountPercent: number;
+  rewardPoolEnabled: boolean;
+  prenaEarlyRegistrationAt: string | null;
   entrantCap: number;
   entrantCount: number;
   spectators: number;

@@ -1,4 +1,5 @@
 import { createAdminClient } from './supabase/server';
+import { fromBaseUnits, tryParseBaseUnits } from './prena/amount';
 import { getArenas, getLiveArena, getStandings } from './queries';
 import { visitRate } from './scoring';
 import {
@@ -7,6 +8,7 @@ import {
   entryFromRow,
   nested,
   number,
+  optionalString,
   paymentFromRow,
   projectFromRow,
   string,
@@ -87,20 +89,6 @@ export async function getBuilderEntries(builderId: string): Promise<BuilderEntry
   });
 }
 
-export async function getBuilderPayments(builderId: string): Promise<Array<Payment & { arenaName: string; projectName: string }>> {
-  const admin = createAdminClient();
-  if (!admin) return [];
-  const { data } = await admin
-    .from('payments')
-    .select('*, arenas:arena_id(name), projects:project_id(name)')
-    .eq('builder_id', builderId)
-    .order('created_at', { ascending: false });
-  return ((data ?? []) as Row[]).map((row) => ({
-    ...paymentFromRow(row),
-    arenaName: string(nested(row.arenas)?.name),
-    projectName: string(nested(row.projects)?.name),
-  }));
-}
 
 export async function getProjectArenaStats(
   projectId: string,
@@ -238,4 +226,73 @@ export function builderFromId(builder: Builder): Builder {
     email: builder.email,
     avatar_url: builder.avatarUrl,
   });
+}
+
+export interface BuilderEntryPayment {
+  id: string;
+  /** Which rail settled this entry. */
+  rail: 'card' | 'prena';
+  arenaName: string;
+  projectName: string;
+  status: string;
+  /** Card entries carry USD cents; $PRENA entries carry a token amount. */
+  amountCents: number | null;
+  tokenAmountDisplay: string | null;
+  tokenSymbol: string | null;
+  receiptUrl: string | null;
+  txHash: string | null;
+  createdAt: string;
+}
+
+/**
+ * Every entry payment a Builder has made, on either rail. Billing read the
+ * `payments` table alone, so a Builder who paid in $PRENA was told they had no
+ * payment history at all.
+ */
+export async function getBuilderEntryPayments(builderId: string): Promise<BuilderEntryPayment[]> {
+  const admin = createAdminClient();
+  if (!admin) return [];
+
+  const [{ data: cards }, { data: tokens }] = await Promise.all([
+    admin
+      .from('payments')
+      .select('*, arenas:arena_id(name), projects:project_id(name)')
+      .eq('builder_id', builderId)
+      .order('created_at', { ascending: false }),
+    admin
+      .from('token_payments')
+      .select('*, arenas:arena_id(name), projects:project_id(name)')
+      .eq('builder_id', builderId)
+      .order('created_at', { ascending: false }),
+  ]);
+
+  const cardRows: BuilderEntryPayment[] = ((cards ?? []) as Row[]).map((row) => ({
+    id: string(row.id),
+    rail: 'card',
+    arenaName: string(nested(row.arenas)?.name),
+    projectName: string(nested(row.projects)?.name),
+    status: string(row.status),
+    amountCents: number(row.amount),
+    tokenAmountDisplay: null,
+    tokenSymbol: null,
+    receiptUrl: optionalString(row.receipt_url),
+    txHash: null,
+    createdAt: string(row.created_at),
+  }));
+
+  const tokenRows: BuilderEntryPayment[] = ((tokens ?? []) as Row[]).map((row) => ({
+    id: string(row.id),
+    rail: 'prena',
+    arenaName: string(nested(row.arenas)?.name),
+    projectName: string(nested(row.projects)?.name),
+    status: string(row.status),
+    amountCents: null,
+    tokenAmountDisplay: fromBaseUnits(tryParseBaseUnits(row.token_amount) ?? 0n, number(row.token_decimals, 18)),
+    tokenSymbol: string(row.token_symbol, 'PRENA'),
+    receiptUrl: null,
+    txHash: optionalString(row.tx_hash),
+    createdAt: string(row.created_at),
+  }));
+
+  return [...cardRows, ...tokenRows].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

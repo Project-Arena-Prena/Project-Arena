@@ -1,10 +1,13 @@
+import { formatDisplayAmount } from './prena/amount';
+import { siteUrl } from './stripe';
 import { createAdminClient } from './supabase/server';
 
 export type EmailTemplate =
   | 'entry_payment_received'
   | 'entry_approved'
   | 'arena_starting'
-  | 'arena_finished';
+  | 'arena_finished'
+  | 'reward_claimable';
 
 interface Mail {
   template: EmailTemplate;
@@ -24,6 +27,8 @@ function subjectFor(mail: Mail): string {
       return `${arena} is now live`;
     case 'arena_finished':
       return `${project} finished in ${arena}`;
+    case 'reward_claimable':
+      return `Your ${arena} reward is ready to claim`;
   }
 }
 
@@ -31,6 +36,9 @@ function bodyFor(mail: Mail): string {
   const arena = String(mail.payload.arenaName ?? 'the Arena');
   const project = String(mail.payload.projectName ?? 'Your Project');
   const rank = mail.payload.rank;
+  const amount = formatDisplayAmount(String(mail.payload.amount ?? '0'));
+  const symbol = String(mail.payload.tokenSymbol ?? 'PRENA');
+  const label = String(mail.payload.rewardLabel ?? 'Reward');
   switch (mail.template) {
     case 'entry_payment_received':
       return `Payment received for ${arena}. Your Project is pending review.`;
@@ -42,6 +50,8 @@ function bodyFor(mail: Mail): string {
       return rank
         ? `${project} finished #${rank} in ${arena}. View your results.`
         : `${arena} has finished. View your results.`;
+    case 'reward_claimable':
+      return `${project} earned ${amount} ${symbol} in ${arena} (${label}). Earned through Project Arena. Claim Reward: ${siteUrl()}/dashboard/prena`;
   }
 }
 
