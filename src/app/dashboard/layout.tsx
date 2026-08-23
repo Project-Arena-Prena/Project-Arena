@@ -1,19 +1,32 @@
 import Link from 'next/link';
 import { requireBuilder } from '@/lib/auth';
 import { Container } from '@/components/ui';
+import { WalletProvider } from '@/components/prena/wallet-provider';
+import { getBuilderWallets } from '@/services/wallet';
 
 export const dynamic = 'force-dynamic';
 
 const LINKS = [
   { href: '/dashboard', label: 'Overview' },
   { href: '/dashboard/projects', label: 'Projects' },
+  { href: '/dashboard/prena', label: '$PRENA' },
   { href: '/dashboard/billing', label: 'Billing' },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireBuilder('/dashboard');
+  const wallets = await getBuilderWallets(ctx.builder.id);
 
   return (
+    <WalletProvider
+      initialWallets={wallets.map((wallet) => ({
+        id: wallet.id,
+        address: wallet.address,
+        chainId: wallet.chainId,
+        isPrimary: wallet.isPrimary,
+        verifiedAt: wallet.verifiedAt,
+      }))}
+    >
     <div className="pb-20">
       <div className="border-b hairline bg-ink-900/60">
         <Container className="flex flex-wrap items-center justify-between gap-3 py-2.5">
@@ -53,5 +66,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </div>
       {children}
     </div>
+    </WalletProvider>
   );
 }

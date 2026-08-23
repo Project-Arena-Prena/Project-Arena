@@ -2,6 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireBuilder } from '@/lib/auth';
 import { getBuilderDashboard } from '@/lib/builder-queries';
+import { getBuilderPrenaSummary, listBuilderRewards } from '@/services/rewards';
+import { getBuilderPrenaBenefits } from '@/services/benefits';
+import { getBuilderWallets } from '@/services/wallet';
+import { getPrenaActivity } from '@/services/activity';
+import { PrenaDashboardPanel } from '@/components/prena/prena-dashboard-panel';
+import { PrenaActivityList } from '@/components/prena/prena-activity-list';
+import { RewardsPanel } from '@/components/prena/rewards-panel';
 
 import {
   ButtonLink,
@@ -27,6 +34,16 @@ export default async function DashboardPage() {
   const ctx = await requireBuilder('/dashboard');
   const { projects, live, upcoming, entries } = await getBuilderDashboard(ctx.builder.id);
   const next = upcoming.find((arena) => arena.status === 'registration') ?? upcoming[0] ?? null;
+
+  const [prenaSummary, prenaBenefits, wallets, rewards, activity] = await Promise.all([
+    getBuilderPrenaSummary(ctx.builder.id),
+    getBuilderPrenaBenefits(ctx.builder.id),
+    getBuilderWallets(ctx.builder.id),
+    listBuilderRewards(ctx.builder.id, ['claimable', 'approved', 'pending']),
+    getPrenaActivity(ctx.builder.id, { limit: 3 }),
+  ]);
+  const hasWallet = wallets.some((wallet) => wallet.verifiedAt);
+  const showPrena = hasWallet || Number(prenaSummary.earned) > 0 || activity.length > 0;
 
   return (
     <>
@@ -87,6 +104,27 @@ export default async function DashboardPage() {
                 </div>
               ))}
             </Panel>
+          </Container>
+
+          {rewards.length > 0 ? (
+            <Container className="pt-12">
+              <SectionHeader eyebrow="Earned" title="Rewards" />
+              <RewardsPanel rewards={rewards} />
+            </Container>
+          ) : null}
+
+          <Container className="pt-12">
+            <PrenaDashboardPanel
+              summary={prenaSummary}
+              benefits={prenaBenefits}
+              hasWallet={hasWallet}
+            />
+            {showPrena && activity.length > 0 ? (
+              <div className="mt-6">
+                <SectionHeader eyebrow="Recent activity" title="$PRENA" />
+                <PrenaActivityList items={activity} />
+              </div>
+            ) : null}
           </Container>
 
           <Container className="pt-12">

@@ -60,9 +60,14 @@ Fixture time is pinned to a fixed epoch so server and client render identically.
 
 Phase 2 schema covers Builders, project ownership, payments, Arena lifecycle
 (`draft → registration → full → live → finished`), entry review, impressions, fraud flags,
-Arena Rating history, and rank snapshots. Fresh projects run `supabase/schema.sql`. Existing
-Phase 1 databases run `supabase/migrations/002_phase2_commercial.sql` then the function/RLS
-sections of `schema.sql`.
+Arena Rating history, and rank snapshots. Phase 3 adds the $PRENA utility layer:
+`builder_wallets`, `wallet_nonces`, `prena_quotes`, `token_payments`, `arena_reward_pools`,
+`arena_reward_tiers`, `reward_allocations`, and the derived `prena_activity` view.
+
+Fresh projects run `supabase/schema.sql`. Existing Phase 1 databases run
+`supabase/migrations/002_phase2_commercial.sql` then the function/RLS sections of
+`schema.sql`. Existing Phase 2 databases run `supabase/migrations/004_phase3_prena.sql`,
+which is idempotent.
 
 Scoring is server-side only. `arena_entries.score` is a generated column
 (`supporters + unique_visits * 2`). Payments never touch that formula.
@@ -77,6 +82,9 @@ Key RPCs (service role):
 | `reconcile_arenas` | Cron + lazy reads |
 | `start_arena` / `finalize_arena_by_id` | Lifecycle |
 | `record_support` / `record_outbound_visit` / `record_impression` | Public events |
+| `start_prena_entry` / `confirm_prena_entry` | $PRENA entry (server-verified) |
+| `generate_arena_reward_allocations` | Reward engine, after an Arena freezes |
+| `claim_reward` | Reward claim, guarded to run once |
 
 ## Stripe setup
 
@@ -130,7 +138,9 @@ touched.
 | `/enter`           | Page      | Select Project, pay, pending review (`/enter/success` on return) |
 | `/login`           | Page      | Builder magic link                                               |
 | `/dashboard`       | Page      | Builder: Projects, live rank, upcoming, performance              |
+| `/dashboard/prena` | Page      | Builder: $PRENA balance, rewards, entry and claim history        |
 | `/admin`           | Page      | Operator: Arenas, entries, payments, fraud, analytics            |
+| `/admin/prena`     | Page      | Operator: token payments, reward allocations, claim status       |
 
 | API                    | Method | Body / Result                                                              |
 | ---------------------- | ------ | -------------------------------------------------------------------------- |
@@ -138,6 +148,79 @@ touched.
 | `/api/impressions`     | POST   | `{ projectSlug, arenaSlug, visitorId }` → viewport impression               |
 | `/api/checkout`        | POST   | `{ arenaSlug, projectId }` → Stripe Checkout URL                            |
 | `/api/stripe/webhook`  | POST   | Stripe signed event → confirms payment, creates pending-review entry        |
-| `/api/cron/reconcile`  | GET    | Starts and finishes Arenas from server time                                 |
+| `/api/cron/reconcile`  | GET    | Starts and finishes Arenas; expires token holds; drafts rewards             |
+| `/api/wallet/nonce`    | POST   | `{ address, chainId, purpose }` → server-issued signing challenge           |
+| `/api/wallet/link`     | POST   | `{ nonce, message, signature }` → verifies ownership, links the wallet      |
+| `/api/wallet/balance`  | GET    | Server-side $PRENA balance for a verified wallet                            |
+| `/api/prena/quote`     | POST   | `{ arenaSlug, projectId }` → authoritative, expiring token quote            |
+| `/api/prena/entry`     | POST   | `{ quoteId, walletAddress, ... }` → holds a slot, returns a payment intent  |
+| `/api/prena/entry/verify` | POST | `{ tokenPaymentId, txHash }` → re-reads the chain, then creates the entry   |
+| `/api/rewards/challenge` | POST | `{ allocationId }` → claim signing challenge                                |
+| `/api/rewards/claim`   | POST   | Signed claim → marks one allocation claimed, exactly once                   |
 
 Dynamic routes are statically generated via `generateStaticParams`.
+
+## $PRENA (Phase 3)
+
+$PRENA is the participation and ecosystem utility layer. It buys a slot and a discount.
+**It can never buy rank, votes, score, or victory.** There is no API that accepts token
+spend and modifies an Arena score, and the reward engine only ever reads `final_rank`
+after Arena scoring has frozen it.
+
+Card entry is unchanged and always available. A wallet is never required to visit, to
+compete, or to win.
+
+### Modes
+
+`PRENA_MODE=mock` (default) simulates balances, quotes, payments, confirmation, rewards,
+and claiming through the identical service interfaces and database tables — the whole
+flow is exercisable before the token is deployed. Simulated rows are labelled `mock` in
+the database and in the UI.
+
+`PRENA_MODE=onchain` requires a deployed token, a treasury, an RPC endpoint, and
+`PRENA_PRICE_SOURCE_URL`. Quoting deliberately hard-fails rather than falling back to the
+development price. `/admin/prena` lists whatever configuration is still missing.
+
+See `.env.example` for every variable. No contract address, chain id, or treasury is
+hard-coded anywhere in application code.
+
+### Services
+
+| Path | Responsibility |
+| --- | --- |
+| `src/services/chain/` | The only blockchain abstraction: mock and onchain providers |
+| `src/services/wallet.ts` | Nonces, signature verification, linking, unlinking |
+| `src/services/token.ts` | Balance reads |
+| `src/services/tokenQuote.ts` | Authoritative, expiring USD → token quotes |
+| `src/services/tokenPayment.ts` | Payment intents and server-side verification |
+| `src/services/rewards.ts` | Pools, tiers, allocation, claiming |
+| `src/services/benefits.ts` | Configuration-driven perk checks |
+
+No RPC call is made from a React component.
+
+### Guarantees
+
+| Guarantee | Enforced by |
+| --- | --- |
+| A wallet address is never trusted from the client | Signature over a single-use, expiring nonce |
+| One wallet belongs to one Builder | `builder_wallets_address_unique` |
+| One transaction hash funds one entry | `token_payments_tx_unique` on `(chain_id, tx_hash)` |
+| A paid entry needs server-side proof | `verifyPrenaPayment` re-reads token, amount, recipient, sender, chain, and receipt |
+| Token amounts survive uint256 precision | Base units stored as text; `parseBaseUnits` throws on anything else |
+| A reward is claimable once | Row lock plus a `claimable → claimed` status guard in `claim_reward` |
+| Token spend cannot change rank | No write path from any token table to a scoring column |
+
+Base-unit amounts are stored as `text`, not `numeric`: PostgREST returns Postgres `numeric`
+as a JavaScript number, which silently mangles a value like `2407000000000000000000` into
+`2.407e+21`. An amount check against that would accept an underpayment.
+
+### Rehearsal
+
+```bash
+npm run dry-run:prena
+```
+
+Runs the full flow against a real database in mock mode — link, quote, entry, verified
+payment, finish, rewards, claim — and asserts that forged signatures, replayed nonces,
+reused transaction hashes, and double claims are all rejected, and that a Project's score
+is unchanged by a token payment.

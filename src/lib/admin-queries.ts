@@ -1,4 +1,5 @@
 import { createAdminClient } from './supabase/server';
+import { fromBaseUnits, tryParseBaseUnits } from './prena/amount';
 import { reconcileArenas } from './arena-lifecycle';
 import {
   arenaFromRow,
@@ -244,4 +245,121 @@ export async function getAdminAnalytics(): Promise<{
     shareRate: results ? Math.round((shares / results) * 1000) / 10 : 0,
     repeatEntryRate: builders.size ? Math.round((repeats / builders.size) * 1000) / 10 : 0,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3 — $PRENA operations
+// ---------------------------------------------------------------------------
+
+export interface AdminTokenPaymentRow {
+  id: string;
+  status: string;
+  walletAddress: string;
+  txHash: string | null;
+  tokenSymbol: string;
+  /** Display units — base units divided by decimals. */
+  amountDisplay: string;
+  quoteUsdCents: number;
+  chainId: number;
+  mode: string;
+  failureReason: string | null;
+  arenaName: string;
+  arenaId: string;
+  projectName: string;
+  createdAt: string;
+  confirmedAt: string | null;
+}
+
+function toTokenPaymentRow(row: Row): AdminTokenPaymentRow {
+  const decimals = number(row.token_decimals, 18);
+  const base = tryParseBaseUnits(row.token_amount) ?? 0n;
+  const display = fromBaseUnits(base, decimals);
+  return {
+    id: string(row.id),
+    status: string(row.status),
+    walletAddress: string(row.wallet_address),
+    txHash: (row.tx_hash as string | null) ?? null,
+    tokenSymbol: string(row.token_symbol, 'PRENA'),
+    amountDisplay: display,
+    quoteUsdCents: number(row.quote_usd_value),
+    chainId: number(row.chain_id),
+    mode: string(row.mode, 'mock'),
+    failureReason: (row.failure_reason as string | null) ?? null,
+    arenaId: string(row.arena_id),
+    arenaName: string(nested(row.arenas)?.name),
+    projectName: string(nested(row.projects)?.name),
+    createdAt: string(row.created_at),
+    confirmedAt: (row.confirmed_at as string | null) ?? null,
+  };
+}
+
+export async function listArenaTokenPayments(arenaId: string): Promise<AdminTokenPaymentRow[]> {
+  const admin = createAdminClient();
+  if (!admin) return [];
+  const { data } = await admin
+    .from('token_payments')
+    .select('*, arenas:arena_id(name), projects:project_id(name)')
+    .eq('arena_id', arenaId)
+    .order('created_at', { ascending: false });
+  return ((data ?? []) as Row[]).map(toTokenPaymentRow);
+}
+
+export async function listAdminTokenPayments(status?: string): Promise<AdminTokenPaymentRow[]> {
+  const admin = createAdminClient();
+  if (!admin) return [];
+  let query = admin
+    .from('token_payments')
+    .select('*, arenas:arena_id(name), projects:project_id(name)')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (status) query = query.eq('status', status);
+  const { data } = await query;
+  return ((data ?? []) as Row[]).map(toTokenPaymentRow);
+}
+
+export interface AdminAllocationRow {
+  id: string;
+  arenaId: string;
+  arenaName: string;
+  projectName: string;
+  builderEmail: string;
+  walletAddress: string | null;
+  amount: string;
+  tokenSymbol: string;
+  rewardType: string;
+  label: string;
+  finalRank: number | null;
+  status: string;
+  claimTxHash: string | null;
+  claimedAt: string | null;
+  createdAt: string;
+}
+
+export async function listAdminAllocations(status?: string): Promise<AdminAllocationRow[]> {
+  const admin = createAdminClient();
+  if (!admin) return [];
+  let query = admin
+    .from('reward_allocations')
+    .select('*, arenas:arena_id(name), projects:project_id(name), builders:builder_id(email)')
+    .order('created_at', { ascending: false })
+    .limit(300);
+  if (status) query = query.eq('status', status);
+  const { data } = await query;
+  return ((data ?? []) as Row[]).map((row) => ({
+    id: string(row.id),
+    arenaId: string(row.arena_id),
+    arenaName: string(nested(row.arenas)?.name),
+    projectName: string(nested(row.projects)?.name),
+    builderEmail: string(nested(row.builders)?.email),
+    walletAddress: (row.wallet_address as string | null) ?? null,
+    amount: String(row.amount ?? '0'),
+    tokenSymbol: string(row.token_symbol, 'PRENA'),
+    rewardType: string(row.reward_type),
+    label: string(row.label),
+    finalRank: row.final_rank == null ? null : number(row.final_rank),
+    status: string(row.status),
+    claimTxHash: (row.claim_tx_hash as string | null) ?? null,
+    claimedAt: (row.claimed_at as string | null) ?? null,
+    createdAt: string(row.created_at),
+  }));
 }

@@ -21,6 +21,9 @@ import {
 import { formatDate, formatMoney, formatNumber } from '@/lib/format';
 import { trackEvent } from '@/lib/analytics';
 import { getAllArenaSlugs, getArena, getLiveArena, getStandings } from '@/lib/queries';
+import { getArenaRewardPool } from '@/services/rewards';
+import { estimatePrenaEntry } from '@/services/tokenQuote';
+import { ArenaRewardPool } from '@/components/prena/arena-reward-pool';
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
@@ -64,7 +67,19 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
   const arena = await getArena(slug);
   if (!arena) notFound();
 
-  const [standings, liveArena] = await Promise.all([getStandings(slug), getLiveArena()]);
+  const [standings, liveArena, rewardPool] = await Promise.all([
+    getStandings(slug),
+    getLiveArena(),
+    arena.rewardPoolEnabled ? getArenaRewardPool(arena.id) : Promise.resolve(null),
+  ]);
+  // Display-only estimate. The spendable amount is always a server quote.
+  const prenaEstimate =
+    arena.prenaPaymentEnabled && arena.entryFeeCents > 0
+      ? await estimatePrenaEntry({
+          usdAmountCents: arena.entryFeeCents,
+          discountPercent: arena.prenaDiscountPercent,
+        })
+      : null;
   await trackEvent('arena_viewed', { arenaId: arena.id });
 
   const isLive = arena.status === 'live';
@@ -122,6 +137,14 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
         </Container>
       </section>
 
+      {rewardPool && rewardPool.status !== 'cancelled' && Number(rewardPool.totalAmount) > 0 ? (
+        <Container className="pt-8">
+          <Reveal delay={0.08}>
+            <ArenaRewardPool pool={rewardPool} />
+          </Reveal>
+        </Container>
+      ) : null}
+
       <Container className="pt-10 sm:pt-12">
         {isCancelled ? (
           <Reveal delay={0.1}>
@@ -146,6 +169,17 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
                     ? `${arena.entrantCap} / ${arena.entrantCap} entered. Checkout is closed.`
                     : `Entry ${arena.entryFeeCents === 0 ? 'is free' : formatMoney(arena.entryFeeCents)}. The grid closes when it is full.`}
                 </p>
+                {!isFull && prenaEstimate ? (
+                  <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="label">or</span>
+                    <span className="num text-sm text-bone">{prenaEstimate.formatted} $PRENA</span>
+                    {arena.prenaDiscountPercent > 0 ? (
+                      <span className="border border-live/30 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-live">
+                        Save {arena.prenaDiscountPercent}%
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
               {isFull ? (
                 <ButtonLink href="/arenas" variant="secondary" size="lg" className="w-full sm:w-auto">

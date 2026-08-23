@@ -68,6 +68,10 @@ export async function runDatabaseArenaClock(): Promise<DryRunReport> {
   for (const row of FIELD) {
     const { data: existing } = await supabase.from('projects').select('id, arena_rating').eq('slug', row.slug).maybeSingle();
     if (existing) {
+      // A previous run parks these as 'rejected' so they stay unlisted.
+      // record_support and record_outbound_visit only accept active projects,
+      // so reactivate before reusing the row.
+      await supabase.from('projects').update({ status: 'active' }).eq('id', existing.id);
       projectIds.push(existing.id);
       continue;
     }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { Countdown } from '@/components/countdown';
 import { Button, ButtonLink, EmptyState, Label, Panel, StatusBadge } from '@/components/ui';
+import { PrenaEntryOption } from '@/components/prena/prena-entry-option';
 import { cn } from '@/lib/cn';
 import { formatDate, formatMoney, formatNumber } from '@/lib/format';
 import type { Arena, Project } from '@/lib/types';
@@ -153,15 +154,6 @@ export function EntryFlow({
           </p>
         ) : null}
 
-        <Button
-          type="button"
-          size="lg"
-          disabled={pending || !selected || full}
-          onClick={continueToPayment}
-          className="w-full sm:w-auto"
-        >
-          {pending ? 'Reserving' : full ? 'Arena full' : 'Continue to payment'}
-        </Button>
       </div>
 
       <div className="lg:sticky lg:top-24">
@@ -188,11 +180,42 @@ export function EntryFlow({
                 <span className="num text-xs">{formatDate(selected.endsAt)}</span>
               </div>
             </div>
-            <div className="flex justify-between border-t hairline px-4 py-3">
+            <div className="border-t hairline px-4 py-4">
               <Label>Entry</Label>
-              <span className="num text-sm">
-                {selected.entryFeeCents === 0 ? 'Free' : formatMoney(selected.entryFeeCents)}
-              </span>
+              <div className="mt-3 flex items-end justify-between gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <span className="label">Card</span>
+                  <span className="num text-2xl leading-none tracking-tight">
+                    {selected.entryFeeCents === 0 ? 'Free' : formatMoney(selected.entryFeeCents)}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  size="md"
+                  disabled={pending || full}
+                  onClick={continueToPayment}
+                  className="shrink-0"
+                >
+                  {pending
+                    ? 'Reserving'
+                    : full
+                      ? 'Arena full'
+                      : selected.entryFeeCents === 0
+                        ? 'Enter free'
+                        : `Pay ${formatMoney(selected.entryFeeCents)}`}
+                </Button>
+              </div>
+
+              {selected.prenaPaymentEnabled && selected.entryFeeCents > 0 ? (
+                <>
+                  <div className="my-4 flex items-center gap-3">
+                    <span className="h-px flex-1 bg-white/[0.08]" />
+                    <span className="label">or</span>
+                    <span className="h-px flex-1 bg-white/[0.08]" />
+                  </div>
+                  <PrenaEntryOption arena={selected} projectId={projectId || null} disabled={full} />
+                </>
+              ) : null}
             </div>
             <div className="flex justify-between border-t hairline px-4 py-3">
               <Label>Spots filled</Label>

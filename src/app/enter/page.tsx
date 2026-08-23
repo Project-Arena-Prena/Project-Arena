@@ -7,6 +7,8 @@ import { getSessionUser } from '@/lib/supabase/server';
 import { getBuilder } from '@/lib/auth';
 import { getOwnedProjects } from '@/lib/builder-queries';
 import { getArenas } from '@/lib/queries';
+import { getBuilderWallets } from '@/services/wallet';
+import { WalletProvider } from '@/components/prena/wallet-provider';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,10 +31,20 @@ export default async function EnterPage({
 
   const ctx = await getBuilder();
   const owned = ctx ? await getOwnedProjects(ctx.builder.id) : [];
+  const wallets = ctx ? await getBuilderWallets(ctx.builder.id) : [];
   const { live, upcoming } = await getArenas();
   const selectable = [...upcoming.filter((item) => item.status === 'registration'), ...live.filter((item) => item.status === 'registration')];
 
   return (
+    <WalletProvider
+      initialWallets={wallets.map((wallet) => ({
+        id: wallet.id,
+        address: wallet.address,
+        chainId: wallet.chainId,
+        isPrimary: wallet.isPrimary,
+        verifiedAt: wallet.verifiedAt,
+      }))}
+    >
     <div className="pb-20">
       <section className="border-b hairline">
         <Container className="flex flex-col gap-5 py-10 sm:py-14">
@@ -62,5 +74,6 @@ export default async function EnterPage({
         />
       </Container>
     </div>
+    </WalletProvider>
   );
 }
