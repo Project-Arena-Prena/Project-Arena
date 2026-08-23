@@ -57,6 +57,14 @@ export function PrenaEntryOption({
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<number | null>(null);
+  /**
+   * The id of a payment that is still settling. This is a ref, not state,
+   * because the resume effect and the quote effect run in the same commit: a
+   * `phase` read from that render is still `idle`, so only a synchronous marker
+   * can stop the quote effect from driving a confirming payment back to idle
+   * and re-enabling Pay underneath a Builder.
+   */
+  const inFlightRef = useRef<string | null>(null);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current !== null) {
@@ -68,6 +76,7 @@ export function PrenaEntryOption({
   useEffect(() => stopPolling, [stopPolling]);
 
   const clearStored = useCallback(() => {
+    inFlightRef.current = null;
     if (!projectId) return;
     try {
       window.localStorage.removeItem(storageKey(arena.slug, projectId));
@@ -158,6 +167,7 @@ export function PrenaEntryOption({
       stored = null;
     }
     if (!stored) return;
+    inFlightRef.current = stored;
     setPhase('confirming');
     pollPayment(stored);
   }, [arena.slug, projectId, pollPayment]);
@@ -191,11 +201,11 @@ export function PrenaEntryOption({
   // Keep a fresh quote on screen while the option is usable.
   useEffect(() => {
     if (!projectId || !arena.prenaPaymentEnabled) return;
+    if (inFlightRef.current) return;
     if (phase !== 'idle') return;
     if (quote && Date.parse(quote.expiresAt) > Date.now()) return;
     void fetchQuote();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, arena.prenaPaymentEnabled]);
+  }, [projectId, arena.prenaPaymentEnabled, phase, quote, fetchQuote]);
 
   const insufficient =
     balanceState === 'ready' &&
@@ -242,6 +252,7 @@ export function PrenaEntryOption({
     }
 
     const created = intentPayload.intent;
+    inFlightRef.current = created.tokenPaymentId;
     setIntent(created);
     try {
       window.localStorage.setItem(storageKey(arena.slug, projectId), created.tokenPaymentId);

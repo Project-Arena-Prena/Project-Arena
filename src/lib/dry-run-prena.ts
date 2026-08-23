@@ -321,6 +321,17 @@ export async function runPrenaDryRun(): Promise<PrenaDryRunReport> {
   await setArenaRewardStatus(arena.id, 'approved', 'claimable');
   steps.push(`rewards:${rewards.created}`);
 
+  // Publishing has to reach the Builder. A claimable allocation nobody is told
+  // about is the failure this assertion exists to catch.
+  const { data: notices } = await supabase
+    .from('email_outbox')
+    .select('id')
+    .eq('template', 'reward_claimable')
+    .eq('payload->>arenaSlug', arena.slug)
+    .limit(1);
+  if (!notices?.length) throw new Error('publishing rewards queued no reward_claimable email');
+  steps.push('notify:queued');
+
   const allocations = await listArenaAllocations(arena.id);
 
   // --- Claim -------------------------------------------------------------------

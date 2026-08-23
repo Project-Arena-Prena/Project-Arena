@@ -224,3 +224,38 @@ Runs the full flow against a real database in mock mode — link, quote, entry, 
 payment, finish, rewards, claim — and asserts that forged signatures, replayed nonces,
 reused transaction hashes, and double claims are all rejected, and that a Project's score
 is unchanged by a token payment.
+
+## Scout (foundation)
+
+Scaffolding only. Nothing about Scout is live, and nothing in the app writes to
+it. `supabase/migrations/006_scout_foundation.sql` settles the data model for a
+future feature where supporters call how a Project will finish, so the shape is
+decided before the feature is designed rather than after.
+
+**There is no prediction, wagering, or staking mechanic in this release.** No UI,
+no API route, and no service function creates a prediction. `scout_predictions`
+exists and stays empty.
+
+### Scout Points
+
+Scout Points are a reputation balance. They are **non-transferable** and have
+**no monetary value**: they are earned and spent only inside Project Arena, they
+do not convert to $PRENA or to anything else, and they cannot be moved between
+Builders. `src/services/scout.ts` exposes no transfer and no conversion because
+the database has nowhere to put one.
+
+If the prediction feature is ever built, it commits Scout Points and nothing
+else — never $PRENA, and never a token-denominated stake. A prediction costs
+points. It does not buy a share of a pot, because there is no pot.
+
+### Guarantees
+
+| Guarantee | Enforced by |
+| --- | --- |
+| Points have no monetary form | No token, wallet, chain, or price column exists; `assert_scout_non_monetary()` fails the migration if one is added |
+| Points cannot move between Builders | `scout_points.builder_id` is immutable via `scout_points_owner_immutable` |
+| A balance can never go negative | `balance >= 0`, plus an `insufficient_scout_points` guard under a row lock in `award_scout_points` |
+| The ledger cannot be rewritten | `scout_point_events` rejects UPDATE and DELETE while the Builder exists |
+| A prediction is locked once an Arena starts | `scout_predictions_locked` rejects `live` / `finished` / `cancelled` Arenas and any Arena past `starts_at` |
+| One call per Builder per Project per Arena | `scout_predictions_unique` |
+| Scout activity cannot change rank | No write path from any scout table or function to a scoring column |
