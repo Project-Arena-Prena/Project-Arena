@@ -17,5 +17,9 @@
     "paths": { "@/*": ["./src/*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  // Tests and the Playwright config are excluded from the production
+  // typecheck: `next build` walks this include list, and a deploy must not
+  // depend on test-only devDependencies being installed. `npm run typecheck`
+  // still covers them via tsconfig.test.json.
+  "exclude": ["node_modules", "tests", "playwright.config.ts"]
 }
