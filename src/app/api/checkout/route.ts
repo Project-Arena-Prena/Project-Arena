@@ -14,6 +14,7 @@ const Body = z.object({
 });
 
 export async function POST(request: Request) {
+  const stripeClient = stripe;
   const ctx = await getBuilder();
   if (!ctx) return NextResponse.json({ error: 'auth_required' }, { status: 401 });
 
@@ -29,6 +30,9 @@ export async function POST(request: Request) {
   if (arena.status !== 'registration') return NextResponse.json({ error: 'arena_closed' }, { status: 409 });
   if (arena.entrantCount >= arena.entrantCap) {
     return NextResponse.json({ error: 'arena_full' }, { status: 409 });
+  }
+  if (arena.entryFeeCents > 0 && !stripeClient) {
+    return NextResponse.json({ error: 'payments_not_configured' }, { status: 503 });
   }
 
   const supabase = createAdminClient();
@@ -56,16 +60,20 @@ export async function POST(request: Request) {
     projectId: parsed.data.projectId,
   });
 
-  if (!stripe || payload.amount === 0) {
-    if (payload.amount === 0) {
-      await supabase.rpc('confirm_paid_entry', {
-        p_payment_id: payload.payment_id,
-        p_checkout_id: `free_${payload.payment_id}`,
-        p_provider_payment_id: null,
-        p_receipt_url: null,
-      });
+  if (payload.amount === 0) {
+    const { error: confirmationError } = await supabase.rpc('confirm_paid_entry', {
+      p_payment_id: payload.payment_id,
+      p_checkout_id: `free_${payload.payment_id}`,
+      p_provider_payment_id: null,
+      p_receipt_url: null,
+    });
+    if (confirmationError) {
+      return NextResponse.json({ error: 'entry_confirmation_failed' }, { status: 500 });
     }
     return NextResponse.json({ url: `/enter/success?arena=${arena.slug}`, free: true });
+  }
+  if (!stripeClient) {
+    return NextResponse.json({ error: 'payments_not_configured' }, { status: 503 });
   }
 
   const { data: project } = await supabase
@@ -74,7 +82,7 @@ export async function POST(request: Request) {
     .eq('id', parsed.data.projectId)
     .maybeSingle();
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await stripeClient.checkout.sessions.create({
     mode: 'payment',
     customer_email: ctx.email,
     line_items: [
@@ -96,6 +104,15 @@ export async function POST(request: Request) {
       arena_id: arena.id,
       project_id: parsed.data.projectId,
       builder_id: ctx.builder.id,
+    },
+    payment_intent_data: {
+      metadata: {
+        payment_id: payload.payment_id,
+        entry_id: payload.entry_id,
+        arena_id: arena.id,
+        project_id: parsed.data.projectId,
+        builder_id: ctx.builder.id,
+      },
     },
     success_url: `${siteUrl()}/enter/success?arena=${arena.slug}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${siteUrl()}/enter?arena=${arena.slug}&canceled=1`,

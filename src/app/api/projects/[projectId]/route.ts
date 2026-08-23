@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { builderOwnsProject, getBuilder } from '@/lib/auth';
 import { PROJECT_CATEGORIES } from '@/lib/types';
 import { createAdminClient } from '@/lib/supabase/server';
+import { publicHttpUrl } from '@/lib/validation';
 
 const Body = z.object({
   name: z.string().min(1).max(60).optional(),
@@ -14,11 +15,11 @@ const Body = z.object({
     .optional(),
   tagline: z.string().min(1).max(140).optional(),
   description: z.string().max(1200).optional(),
-  websiteUrl: z.string().url().max(300).optional(),
+  websiteUrl: publicHttpUrl(300).optional(),
   category: z.enum(PROJECT_CATEGORIES as [string, ...string[]]).optional(),
-  logoUrl: z.string().url().max(500).optional().or(z.literal('')),
-  xUrl: z.string().url().max(300).optional().or(z.literal('')),
-  githubUrl: z.string().url().max(300).optional().or(z.literal('')),
+  logoUrl: publicHttpUrl(500).optional().or(z.literal('')),
+  xUrl: publicHttpUrl(300).optional().or(z.literal('')),
+  githubUrl: publicHttpUrl(300).optional().or(z.literal('')),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ projectId: string }> }) {

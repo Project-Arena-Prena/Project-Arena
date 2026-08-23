@@ -5,6 +5,7 @@ import { clientIp, hashSignal, trackEvent } from '@/lib/analytics';
 import { getProject } from '@/lib/queries';
 import { createAdminClient } from '@/lib/supabase/server';
 import { VISITOR_COOKIE_NAME } from '@/lib/visitor';
+import { safeExternalUrl } from '@/lib/validation';
 
 const Slug = z.string().min(1).max(80).regex(/^[a-z0-9-]+$/);
 const VisitorId = z.string().uuid();
@@ -21,6 +22,8 @@ export async function GET(
 
   const project = await getProject(parsedSlug.data);
   if (!project) return NextResponse.json({ error: 'project_not_found' }, { status: 404 });
+  const destination = safeExternalUrl(project.url);
+  if (!destination) return NextResponse.json({ error: 'invalid_project_url' }, { status: 422 });
 
   const url = new URL(request.url);
   const arenaSlug = Slug.safeParse(url.searchParams.get('arena')).success
@@ -47,7 +50,7 @@ export async function GET(
     await trackEvent('project_outbound_clicked', { visitorId, payload: { projectSlug: project.slug } });
   }
 
-  const response = NextResponse.redirect(project.url, 307);
+  const response = NextResponse.redirect(destination, 307);
   if (visitorId !== cookieValue) {
     response.cookies.set(VISITOR_COOKIE_NAME, visitorId, {
       httpOnly: false,

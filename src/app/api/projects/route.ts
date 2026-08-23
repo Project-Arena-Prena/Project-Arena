@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getBuilder } from '@/lib/auth';
 import { PROJECT_CATEGORIES } from '@/lib/types';
 import { createAdminClient } from '@/lib/supabase/server';
+import { publicHttpUrl } from '@/lib/validation';
 
 const Body = z.object({
   name: z.string().min(1).max(60),
@@ -14,11 +15,11 @@ const Body = z.object({
     .optional(),
   tagline: z.string().min(1).max(140),
   description: z.string().max(1200).optional(),
-  websiteUrl: z.string().url().max(300),
+  websiteUrl: publicHttpUrl(300),
   category: z.enum(PROJECT_CATEGORIES as [string, ...string[]]),
-  logoUrl: z.string().url().max(500).optional().or(z.literal('')),
-  xUrl: z.string().url().max(300).optional().or(z.literal('')),
-  githubUrl: z.string().url().max(300).optional().or(z.literal('')),
+  logoUrl: publicHttpUrl(500).optional().or(z.literal('')),
+  xUrl: publicHttpUrl(300).optional().or(z.literal('')),
+  githubUrl: publicHttpUrl(300).optional().or(z.literal('')),
 });
 
 function slugify(value: string): string {
@@ -68,11 +69,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message ?? 'create_failed' }, { status: 500 });
   }
 
-  await supabase.from('project_owners').insert({
+  const { error: ownerError } = await supabase.from('project_owners').insert({
     project_id: project.id,
     builder_id: ctx.builder.id,
     role: 'owner',
   });
+  if (ownerError) {
+    await supabase.from('projects').delete().eq('id', project.id);
+    return NextResponse.json({ error: 'owner_link_failed' }, { status: 500 });
+  }
 
   return NextResponse.json({ id: project.id, slug: project.slug });
 }

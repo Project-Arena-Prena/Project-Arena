@@ -83,6 +83,10 @@ async function deliver(mail: Mail): Promise<'sent' | 'mocked' | 'failed'> {
 }
 
 export async function flushEmailOutbox(limit = 20): Promise<number> {
+  // Preserve queued production mail until a provider is configured. This also
+  // prevents recipient addresses and message bodies from reaching runtime logs.
+  if (process.env.NODE_ENV === 'production' && !process.env.RESEND_API_KEY) return 0;
+
   const supabase = createAdminClient();
   if (!supabase) return 0;
   const { data } = await supabase

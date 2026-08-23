@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { cn } from '@/lib/cn';
 
 export function ProjectLogo({
@@ -21,7 +20,9 @@ export function ProjectLogo({
       aria-hidden
     >
       {logoUrl ? (
-        <Image src={logoUrl} alt="" fill sizes={size === 'lg' ? '80px' : size === 'md' ? '48px' : '36px'} className="object-cover" />
+        // User-supplied hosts cannot be safely allowlisted for the server-side image optimizer.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logoUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
       ) : (
         name.slice(0, 2)
       )}

@@ -7,6 +7,9 @@ export const runtime = 'nodejs';
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   const header = request.headers.get('authorization');
+  if (process.env.NODE_ENV === 'production' && !secret) {
+    return NextResponse.json({ error: 'cron_not_configured' }, { status: 503 });
+  }
   if (secret && header !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }

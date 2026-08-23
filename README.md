@@ -12,7 +12,7 @@ Discover. Compete. Get seen.
 
 | Layer      | Choice                                      |
 | ---------- | ------------------------------------------- |
-| Framework  | Next.js 15 (App Router, React 19 Server Components) |
+| Framework  | Next.js 16 (App Router, React 19 Server Components) |
 | Language   | TypeScript, strict                          |
 | Styling    | Tailwind CSS 3                              |
 | Motion     | framer-motion                               |
@@ -113,16 +113,17 @@ Webhook events to enable: `checkout.session.completed`, `checkout.session.async_
 Deploy to Vercel.
 
 1. Import the repository. The framework preset is detected; no build overrides are needed.
-2. Set all six variables from `.env.example` in Project Settings → Environment Variables.
+2. Set the production variables from `.env.example` in Project Settings → Environment Variables.
    `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` are server only.
 3. Set `NEXT_PUBLIC_SITE_URL` to the production origin, without a trailing slash.
 4. Add a Stripe webhook endpoint at `https://<domain>/api/stripe/webhook` and store its signing secret.
 5. Add the production domain to Supabase → Authentication → URL Configuration, including
    `https://<domain>/auth/callback`.
-6. Set `ADMIN_EMAILS` to bootstrap the first operator. Optional: `CRON_SECRET`, `RESEND_API_KEY`.
+6. Set `ADMIN_EMAILS` to bootstrap the first operator. Production deploys also require
+   `CRON_SECRET` and `FRAUD_SALT`. `RESEND_API_KEY` and `EMAIL_FROM` can be added later.
 7. Vercel Cron hits `/api/cron/reconcile` every minute. Reads also lazily reconcile Arena state.
 
-`middleware.ts` refreshes the Supabase session on every request and is a no-op when the environment
+`proxy.ts` refreshes the Supabase session on every request and is a no-op when the environment
 is unset. Its matcher excludes static assets and the Stripe webhook, whose raw body must not be
 touched.
 

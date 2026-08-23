@@ -1,11 +1,7 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import './globals.css';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
-const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
@@ -27,7 +23,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+    <html lang="en">
       <body className="min-h-screen">
         <SiteHeader />
         <main>{children}</main>

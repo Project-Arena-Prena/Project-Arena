@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 type CookiesToSet = { name: string; value: string; options: CookieOptions }[];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -25,18 +25,17 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const isAuthenticated = Boolean(data?.claims?.sub);
 
   const path = request.nextUrl.pathname;
-  if (path.startsWith('/dashboard') && !user) {
+  if (path.startsWith('/dashboard') && !isAuthenticated) {
     const login = request.nextUrl.clone();
     login.pathname = '/login';
     login.searchParams.set('next', path);
     return NextResponse.redirect(login);
   }
-  if (path.startsWith('/admin') && !user) {
+  if (path.startsWith('/admin') && !isAuthenticated) {
     const login = request.nextUrl.clone();
     login.pathname = '/login';
     login.searchParams.set('next', path);

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { LoginForm } from './login-form';
 import { Container, Label } from '@/components/ui';
 import { getSessionUser } from '@/lib/supabase/server';
+import { safeInternalPath } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export default async function LoginPage({
 }) {
   const user = await getSessionUser();
   const { next, error } = await searchParams;
-  const destination = next?.startsWith('/') ? next : '/dashboard';
+  const destination = safeInternalPath(next, '/dashboard');
   if (user) redirect(destination);
 
   return (

@@ -92,7 +92,6 @@ export function ProjectCard({
           <div className="col-span-2 flex gap-2 md:col-span-1 md:justify-end">
             <SupportButton
               projectSlug={standing.project.slug}
-              projectUrl={standing.project.url}
               arenaSlug={arenaSlug}
               initialSupporters={standing.supporters}
               onScoreChange={(delta) => setScore((current) => current + delta)}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { safeInternalPath } from '@/lib/validation';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -8,17 +9,21 @@ export async function GET(request: Request) {
   const type = url.searchParams.get('type');
   const next = url.searchParams.get('next') ?? '/dashboard';
   const origin = url.origin;
-  const destination = next.startsWith('/') ? next : '/dashboard';
+  const destination = safeInternalPath(next, '/dashboard');
 
   const supabase = await createClient();
+  let error: unknown = null;
   if (supabase && code) {
-    await supabase.auth.exchangeCodeForSession(code);
+    ({ error } = await supabase.auth.exchangeCodeForSession(code));
   } else if (supabase && tokenHash) {
-    await supabase.auth.verifyOtp({
+    ({ error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
       type: (type as 'email' | 'magiclink') || 'email',
-    });
+    }));
+  } else {
+    error = new Error('missing_auth_token');
   }
 
+  if (error) return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
   return NextResponse.redirect(`${origin}${destination}`);
 }

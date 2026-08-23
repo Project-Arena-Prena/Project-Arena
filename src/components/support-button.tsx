@@ -12,14 +12,12 @@ import { getVisitorId, supportStorageKey } from '@/lib/visitor';
  */
 export function SupportButton({
   projectSlug,
-  projectUrl,
   arenaSlug,
   initialSupporters,
   onScoreChange,
   compact = false,
 }: {
   projectSlug: string;
-  projectUrl: string;
   arenaSlug: string;
   initialSupporters: number;
   onScoreChange?: (delta: number) => void;

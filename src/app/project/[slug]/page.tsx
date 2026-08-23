@@ -156,7 +156,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               <ProjectActions
                 projectSlug={project.slug}
                 projectName={project.name}
-                projectUrl={project.url}
                 liveArenaSlug={competing ? competing.arena.slug : null}
                 initialSupporters={competing ? competing.standing.supporters : 0}
               />

@@ -10,13 +10,11 @@ import { getVisitorId, supportStorageKey } from '@/lib/visitor';
 export function ProjectActions({
   projectSlug,
   projectName,
-  projectUrl,
   liveArenaSlug,
   initialSupporters = 0,
 }: {
   projectSlug: string;
   projectName: string;
-  projectUrl: string;
   liveArenaSlug?: string | null;
   initialSupporters?: number;
 }) {
