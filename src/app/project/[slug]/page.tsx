@@ -19,13 +19,19 @@ import {
   SectionHeader,
 } from '@/components/ui';
 import { formatDate, formatNumber, formatRank } from '@/lib/format';
+import { percentileLabel } from '@/lib/scoring';
 import {
   getAllProjectSlugs,
   getLiveArena,
   getLiveStandingForProject,
+  getNextArenaForCategory,
   getProject,
   getProjectHistory,
 } from '@/lib/queries';
+import { shareImageUrl } from '@/lib/share';
+
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const slugs = await getAllProjectSlugs();
@@ -40,6 +46,8 @@ export async function generateMetadata({
   const { slug } = await params;
   const project = await getProject(slug);
   if (!project) return { title: 'Project Not Found' };
+  const live = await getLiveStandingForProject(slug);
+  const liveArena = await getLiveArena();
   return {
     title: project.name,
     description: project.tagline,
@@ -47,6 +55,8 @@ export async function generateMetadata({
       title: `${project.name} — Project Arena`,
       description: project.tagline,
       type: 'website',
+      images:
+        live && liveArena ? [shareImageUrl('live', project.slug, liveArena.slug)] : undefined,
     },
   };
 }
@@ -64,13 +74,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const project = await getProject(slug);
   if (!project) notFound();
 
-  const [history, liveStanding, liveArena] = await Promise.all([
+  const [history, liveStanding, liveArena, nextArena] = await Promise.all([
     getProjectHistory(slug),
     getLiveStandingForProject(slug),
     getLiveArena(),
+    getNextArenaForCategory(project.category),
   ]);
 
   const competing = liveStanding && liveArena ? { standing: liveStanding, arena: liveArena } : null;
+  const last = history[0];
+  const lastDelta = last?.ratingDelta ?? 0;
+  const ratingPercent = project.appearances > 0 ? percentileLabel(Math.max(1, project.highestRank ?? 8), 32) : null;
 
   const meta: Array<{ label: string; value: ReactNode }> = [
     { label: 'Category', value: project.category },
@@ -153,7 +167,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
       <section className="border-b hairline">
         <Container>
-          <CareerStats project={project} />
+          <CareerStats project={project} lastDelta={lastDelta} percentile={ratingPercent} />
         </Container>
       </section>
 
@@ -219,12 +233,16 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           <div className="flex min-w-0 flex-col gap-2">
             <Label>Next Arena</Label>
             <p className="text-lg font-semibold tracking-headline sm:text-xl">
-              Enter this Project in the next Arena
+              {nextArena ? `Next for ${project.name}: ${nextArena.name}` : 'Enter this Project in the next Arena'}
             </p>
-            <p className="text-xs text-bone-dim">Grids close when they fill.</p>
+            <p className="text-xs text-bone-dim">
+              {nextArena
+                ? `${nextArena.entrantCount} / ${nextArena.entrantCap} spots filled`
+                : 'Grids close when they fill.'}
+            </p>
           </div>
-          <ButtonLink href="/enter" size="lg" className="w-full sm:w-auto">
-            Enter Arena
+          <ButtonLink href={nextArena ? `/enter?arena=${nextArena.slug}` : '/enter'} size="lg" className="w-full sm:w-auto">
+            Enter next Arena
           </ButtonLink>
         </Panel>
 

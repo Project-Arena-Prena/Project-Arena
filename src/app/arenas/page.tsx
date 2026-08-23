@@ -109,8 +109,8 @@ export default async function ArenasPage() {
           </Reveal>
           {upcoming.length === 0 ? (
             <EmptyState
-              title="No Arena scheduled"
-              hint="The next slate is being set. Check back shortly."
+              title="No Arenas open yet"
+              hint="The next competition is being prepared."
             />
           ) : (
             <Reveal delay={0.06}>

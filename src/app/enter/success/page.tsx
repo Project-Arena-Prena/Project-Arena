@@ -1,84 +1,68 @@
 import type { Metadata } from 'next';
-import { ButtonLink, Container, Label, Panel, Rule } from '@/components/ui';
-import { formatDateTime } from '@/lib/format';
+import { ButtonLink, Container, Label, Panel, StatusBadge } from '@/components/ui';
 import { getArena } from '@/lib/queries';
+import { getBuilder } from '@/lib/auth';
+import { getBuilderEntries } from '@/lib/builder-queries';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Entry Confirmed',
-  description: 'Your Project is on the grid.',
+  title: 'Entry received',
   robots: { index: false, follow: false },
 };
-
-const NEXT_STEPS = [
-  { index: '01', body: 'A receipt and your entry confirmation are on their way to your email.' },
-  { index: '02', body: 'Your Project is seeded onto the grid with its rating and record.' },
-  { index: '03', body: 'When the clock runs, supporters and clicks decide the standings.' },
-];
 
 export default async function EntrySuccessPage({
   searchParams,
 }: {
   searchParams: Promise<{ arena?: string; session_id?: string }>;
 }) {
-  const { arena: arenaSlug, session_id: sessionId } = await searchParams;
+  const { arena: arenaSlug } = await searchParams;
   const arena = arenaSlug ? await getArena(arenaSlug) : null;
+  const ctx = await getBuilder();
+  const entries = ctx ? await getBuilderEntries(ctx.builder.id) : [];
+  const match = arena ? entries.find((item) => item.arena.slug === arena.slug) : entries[0];
+  const status = match?.entry.status ?? 'pending_review';
 
   return (
-    <div className="pb-24">
-      <Container className="py-16 sm:py-24">
-        <div className="flex w-full max-w-[880px] flex-col gap-10">
-          <div className="animate-rise-in flex flex-col gap-5">
-            <Label>Entry Confirmed</Label>
-            <h1 className="text-[44px] font-semibold leading-[0.9] tracking-headline sm:text-6xl lg:text-7xl">
-              You&apos;re in.
-            </h1>
-            {arena ? (
-              <p className="num text-sm uppercase tracking-widest text-bone-dim">
-                {arena.name}
-                <span className="px-2 text-bone-faint">/</span>
-                {arena.status === 'live' ? 'Running now' : `Starts ${formatDateTime(arena.startsAt)} UTC`}
-              </p>
+    <Container className="py-16 sm:py-24">
+      <div className="max-w-3xl">
+        <Label>Entry</Label>
+        <h1 className="mt-4 text-5xl font-semibold tracking-headline">
+          {status === 'pending_review' || status === 'approved' ? 'Payment confirmed.' : 'Entry received.'}
+        </h1>
+        {arena ? (
+          <p className="mt-4 font-mono text-xs uppercase tracking-widest text-bone-dim">{arena.name}</p>
+        ) : null}
+
+        <Panel className="mt-10">
+          <div className="flex items-center justify-between border-b hairline px-5 py-3">
+            <Label>Entry status</Label>
+            <StatusBadge status={status} />
+          </div>
+          <div className="px-5 py-5 text-sm leading-relaxed text-bone-dim">
+            {status === 'pending_review' ? (
+              <p>Payment confirmed. Your Project will appear when approved.</p>
+            ) : status === 'approved' ? (
+              <p>Approved. Your Project is on the grid.</p>
+            ) : match?.payment?.status === 'overflow' ? (
+              <p>Payment succeeded but the Arena filled. An admin will resolve or refund this entry.</p>
             ) : (
-              <p className="num text-sm uppercase tracking-widest text-bone-dim">Your slot is held on the grid.</p>
+              <p>If checkout completed, this page will update as soon as Stripe confirms the payment.</p>
             )}
           </div>
+        </Panel>
 
-          <Rule />
-
-          <Panel className="animate-rise-in">
-            <div className="border-b hairline px-4 py-3">
-              <Label>What Happens Next</Label>
-            </div>
-            <ol>
-              {NEXT_STEPS.map((step) => (
-                <li key={step.index} className="flex items-baseline gap-4 border-b hairline px-4 py-4 last:border-b-0">
-                  <span className="num text-[10px] tracking-widest text-arena">{step.index}</span>
-                  <p className="text-sm leading-relaxed text-bone-dim">{step.body}</p>
-                </li>
-              ))}
-            </ol>
-          </Panel>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            {arena ? (
-              <ButtonLink href={`/arena/${arena.slug}`} size="lg" className="w-full sm:w-auto">
-                View Arena
-              </ButtonLink>
-            ) : (
-              <ButtonLink href="/arenas" size="lg" className="w-full sm:w-auto">
-                All Arenas
-              </ButtonLink>
-            )}
-            <ButtonLink href="/dashboard" variant="secondary" size="lg" className="w-full sm:w-auto">
-              Go To Dashboard
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          {arena ? (
+            <ButtonLink href={`/arena/${arena.slug}`} size="lg">
+              View Arena
             </ButtonLink>
-          </div>
-
-          {sessionId ? (
-            <p className="num truncate text-[10px] uppercase tracking-widest text-bone-faint">Ref {sessionId}</p>
           ) : null}
+          <ButtonLink href="/dashboard" variant="secondary" size="lg">
+            Go to dashboard
+          </ButtonLink>
         </div>
-      </Container>
-    </div>
+      </div>
+    </Container>
   );
 }

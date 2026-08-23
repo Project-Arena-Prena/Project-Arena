@@ -12,6 +12,7 @@ const NAV = [
   { href: '/arenas', label: 'Arenas' },
   { href: '/hall-of-fame', label: 'Hall of Fame' },
   { href: '/enter', label: 'Enter' },
+  { href: '/dashboard', label: 'Dashboard' },
 ];
 
 export function SiteHeader() {
@@ -45,6 +46,9 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <Link href="/login" className="hidden font-mono text-[11px] uppercase tracking-widest text-bone-dim transition-colors hover:text-bone sm:inline">
+            Sign in
+          </Link>
           <Link href="/enter" className={cn(buttonClass('primary', 'sm'), 'hidden sm:inline-flex')}>
             Enter the Arena
           </Link>
@@ -73,6 +77,13 @@ export function SiteHeader() {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="border-b hairline py-4 font-mono text-[11px] uppercase tracking-widest text-bone-dim"
+            >
+              Sign in
+            </Link>
             <Link
               href="/enter"
               onClick={() => setOpen(false)}

@@ -96,6 +96,7 @@ function makeProject(seed: Seed, index: number): Project {
     appearances: seed.appearances,
     wins: seed.wins,
     podiums: seed.podiums,
+    highestRank: seed.wins > 0 ? 1 : seed.podiums > 0 ? 3 : 8,
     totalSupporters: 4200 - index * 118 + (index % 5) * 47,
     totalClicks: 11800 - index * 305 + (index % 7) * 91,
     createdAt: iso(-DAY * (400 - index * 9)),
@@ -106,6 +107,22 @@ export const PROJECTS: Project[] = SEEDS.map(makeProject);
 
 export function projectBySlug(slug: string): Project | undefined {
   return PROJECTS.find((p) => p.slug === slug);
+}
+
+function arenaExtras(partial: Pick<Arena, 'startsAt' | 'endsAt' | 'category'> & { registrationOpensAt?: string }): Pick<
+  Arena,
+  'registrationOpensAt' | 'registrationClosesAt' | 'eligibilityText' | 'scoringConfig' | 'category'
+> {
+  return {
+    category: partial.category,
+    registrationOpensAt: partial.registrationOpensAt ?? iso(-14 * DAY),
+    registrationClosesAt: partial.startsAt,
+    eligibilityText: 'Any internet project with a public URL.',
+    scoringConfig: {
+      weights: { supporter: 1, uniqueVisit: 2 },
+      rating: { champion: 100, top10: 70, top25: 40, top50: 15, bottom50: -10 },
+    },
+  };
 }
 
 export const LIVE_ARENA: Arena = {
@@ -123,6 +140,7 @@ export const LIVE_ARENA: Arena = {
   spectators: 18421,
   visits: 7194,
   prize: 'Champion badge, permanent Hall of Fame entry, homepage feature for 7 days',
+  ...arenaExtras({ startsAt: iso(-3 * DAY), endsAt: iso(4 * HOUR), category: 'Open' }),
 };
 
 export const UPCOMING_ARENAS: Arena[] = [
@@ -132,7 +150,7 @@ export const UPCOMING_ARENAS: Arena[] = [
     number: 2,
     name: 'Open Arena #002',
     theme: 'Any internet project. Thirty-two spots. The next open field.',
-    status: 'upcoming',
+    status: 'registration',
     startsAt: iso(8 * DAY),
     endsAt: iso(10 * DAY),
     entryFeeCents: 1900,
@@ -141,6 +159,7 @@ export const UPCOMING_ARENAS: Arena[] = [
     spectators: 0,
     visits: 0,
     prize: 'Champion badge, Hall of Fame entry, homepage feature for 7 days',
+    ...arenaExtras({ startsAt: iso(8 * DAY), endsAt: iso(10 * DAY), category: 'Open' }),
   },
   {
     id: 'arn_game-003',
@@ -148,7 +167,7 @@ export const UPCOMING_ARENAS: Arena[] = [
     number: 3,
     name: 'Game Arena #003',
     theme: 'Browser games, mobile games, experiments you can play in under a minute.',
-    status: 'upcoming',
+    status: 'registration',
     startsAt: iso(9 * DAY),
     endsAt: iso(12 * DAY),
     entryFeeCents: 3900,
@@ -157,6 +176,7 @@ export const UPCOMING_ARENAS: Arena[] = [
     spectators: 0,
     visits: 0,
     prize: 'Champion badge, Hall of Fame entry, homepage feature for 7 days',
+    ...arenaExtras({ startsAt: iso(9 * DAY), endsAt: iso(12 * DAY), category: 'Games' }),
   },
   {
     id: 'arn_oss-004',
@@ -164,7 +184,7 @@ export const UPCOMING_ARENAS: Arena[] = [
     number: 4,
     name: 'Open Source Arena #004',
     theme: 'Public repos only. Stars are not the score here.',
-    status: 'upcoming',
+    status: 'registration',
     startsAt: iso(16 * DAY),
     endsAt: iso(19 * DAY),
     entryFeeCents: 0,
@@ -173,6 +193,7 @@ export const UPCOMING_ARENAS: Arena[] = [
     spectators: 0,
     visits: 0,
     prize: 'Champion badge, Hall of Fame entry, homepage feature for 7 days',
+    ...arenaExtras({ startsAt: iso(16 * DAY), endsAt: iso(19 * DAY), category: 'Open Source' }),
   },
 ];
 
@@ -192,6 +213,7 @@ export const PAST_ARENAS: Arena[] = [
     spectators: 12904,
     visits: 5382,
     prize: 'Champion badge, Hall of Fame entry',
+    ...arenaExtras({ startsAt: iso(-24 * DAY), endsAt: iso(-21 * DAY), category: 'Open' }),
   },
   {
     id: 'arn_tools-00a',
@@ -208,6 +230,7 @@ export const PAST_ARENAS: Arena[] = [
     spectators: 9877,
     visits: 4110,
     prize: 'Champion badge, Hall of Fame entry',
+    ...arenaExtras({ startsAt: iso(-45 * DAY), endsAt: iso(-42 * DAY), category: 'Developer' }),
   },
   {
     id: 'arn_design-00b',
@@ -224,6 +247,7 @@ export const PAST_ARENAS: Arena[] = [
     spectators: 8140,
     visits: 3299,
     prize: 'Champion badge, Hall of Fame entry',
+    ...arenaExtras({ startsAt: iso(-66 * DAY), endsAt: iso(-63 * DAY), category: 'Design' }),
   },
 ];
 

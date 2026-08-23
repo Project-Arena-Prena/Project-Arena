@@ -25,14 +25,29 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Refreshes an expired token and writes the rotated cookies onto the response.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+  if (path.startsWith('/dashboard') && !user) {
+    const login = request.nextUrl.clone();
+    login.pathname = '/login';
+    login.searchParams.set('next', path);
+    return NextResponse.redirect(login);
+  }
+  if (path.startsWith('/admin') && !user) {
+    const login = request.nextUrl.clone();
+    login.pathname = '/login';
+    login.searchParams.set('next', path);
+    return NextResponse.redirect(login);
+  }
 
   return response;
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/cron/reconcile|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
   ],
 };

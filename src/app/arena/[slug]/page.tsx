@@ -19,7 +19,11 @@ import {
   StatusBadge,
 } from '@/components/ui';
 import { formatDate, formatMoney, formatNumber } from '@/lib/format';
+import { trackEvent } from '@/lib/analytics';
 import { getAllArenaSlugs, getArena, getLiveArena, getStandings } from '@/lib/queries';
+
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const slugs = await getAllArenaSlugs();
@@ -45,11 +49,15 @@ export async function generateMetadata({
   };
 }
 
-const CLOCK_LABEL = {
+const CLOCK_LABEL: Record<string, string> = {
   live: 'Ends In',
+  registration: 'Starts In',
+  full: 'Starts In',
   upcoming: 'Starts In',
   finished: 'Final',
-} as const;
+  cancelled: 'Cancelled',
+  draft: 'Draft',
+};
 
 export default async function ArenaPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -57,9 +65,12 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
   if (!arena) notFound();
 
   const [standings, liveArena] = await Promise.all([getStandings(slug), getLiveArena()]);
+  await trackEvent('arena_viewed', { arenaId: arena.id });
 
   const isLive = arena.status === 'live';
-  const isUpcoming = arena.status === 'upcoming';
+  const isUpcoming = arena.status === 'registration' || arena.status === 'full';
+  const isFull = arena.status === 'full' || arena.entrantCount >= arena.entrantCap;
+  const isCancelled = arena.status === 'cancelled';
   const champion = arena.status === 'finished' ? standings[0] : undefined;
   const slotsLeft = Math.max(0, arena.entrantCap - arena.entrantCount);
   const entrants = standings
@@ -88,10 +99,10 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
               <Label>{CLOCK_LABEL[arena.status]}</Label>
             </div>
             {isLive ? <Countdown target={arena.endsAt} size="lg" /> : null}
-            {isUpcoming ? <Countdown target={arena.startsAt} size="lg" showDays /> : null}
-            {arena.status === 'finished' ? (
+            {isUpcoming && !isCancelled ? <Countdown target={arena.startsAt} size="lg" showDays /> : null}
+            {arena.status === 'finished' || isCancelled ? (
               <span className="num text-3xl uppercase leading-none tracking-tight text-bone-dim sm:text-4xl">
-                {formatDate(arena.endsAt)}
+                {isCancelled ? 'Cancelled' : formatDate(arena.endsAt)}
               </span>
             ) : null}
           </Reveal>
@@ -112,11 +123,15 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
       </section>
 
       <Container className="pt-10 sm:pt-12">
-        {isUpcoming ? (
+        {isCancelled ? (
+          <Reveal delay={0.1}>
+            <EmptyState title="Arena cancelled" hint="This Arena will not run. Entered Projects are queued for refund review." />
+          </Reveal>
+        ) : isUpcoming ? (
           <Reveal delay={0.1} className="flex flex-col gap-10">
             <Panel className="flex flex-col gap-6 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
               <div className="flex flex-col gap-2.5">
-                <Label>Slots Remaining</Label>
+                <Label>{isFull ? 'Arena full' : 'Slots Remaining'}</Label>
                 <div className="flex items-baseline gap-2.5">
                   <span className="num text-4xl leading-none tracking-tight text-bone sm:text-5xl">
                     {formatNumber(slotsLeft)}
@@ -127,13 +142,20 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
                   1 support = 1 pt · 1 unique visit = 2 pts
                 </span>
                 <p className="text-xs text-bone-dim">
-                  Entry {arena.entryFeeCents === 0 ? 'is free' : formatMoney(arena.entryFeeCents)}. The grid
-                  closes when it is full.
+                  {isFull
+                    ? `${arena.entrantCap} / ${arena.entrantCap} entered. Checkout is closed.`
+                    : `Entry ${arena.entryFeeCents === 0 ? 'is free' : formatMoney(arena.entryFeeCents)}. The grid closes when it is full.`}
                 </p>
               </div>
-              <ButtonLink href={`/enter?arena=${arena.slug}`} size="lg" className="w-full sm:w-auto">
-                Enter This Arena
-              </ButtonLink>
+              {isFull ? (
+                <ButtonLink href="/arenas" variant="secondary" size="lg" className="w-full sm:w-auto">
+                  View other Arenas
+                </ButtonLink>
+              ) : (
+                <ButtonLink href={`/enter?arena=${arena.slug}`} size="lg" className="w-full sm:w-auto">
+                  Enter This Arena
+                </ButtonLink>
+              )}
             </Panel>
 
             <div>

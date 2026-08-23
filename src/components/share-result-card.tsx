@@ -1,15 +1,21 @@
 import { ArrowUpRight } from 'lucide-react';
 import type { Arena, Standing } from '@/lib/types';
 import { formatNumber, formatRank } from '@/lib/format';
+import { shareText, xIntentUrl } from '@/lib/share';
+import { siteUrl } from '@/lib/stripe';
 import { ProjectLogo } from './project-logo';
 
 export function ShareResultCard({ standing, arena }: { standing: Standing; arena: Arena }) {
   const hoursLeft = Math.max(1, Math.ceil((Date.parse(arena.endsAt) - Date.now()) / 3_600_000));
-  const text = `${standing.project.name} is currently ${formatRank(standing.rank)} in ${arena.name} with ${formatNumber(standing.score)} points. See what's winning on Project Arena.`;
-  const intent = `https://x.com/intent/post?${new URLSearchParams({
-    text,
-    url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://projectarena.xyz'}/project/${standing.project.slug}`,
-  }).toString()}`;
+  const url = `${siteUrl()}/arena/${arena.slug}`;
+  const text = shareText(arena.status === 'finished' ? (standing.rank === 1 ? 'champion' : 'final') : 'live', {
+    projectName: standing.project.name,
+    arenaName: arena.name,
+    rank: standing.rank,
+    field: arena.entrantCount,
+    url,
+  });
+  const intent = xIntentUrl(text);
 
   return (
     <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">

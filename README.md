@@ -33,7 +33,9 @@ npm run dev
 
 Open http://localhost:3000.
 
-Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npm run typecheck`.
+Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npm run typecheck`, `npm run setup:env`, `npm run dry-run`.
+
+First paid Arena: follow `docs/runbook-arena-001.md`. Admin → Dry-run runs the same clock.
 
 ## Runs without Supabase
 
@@ -56,23 +58,25 @@ Fixture time is pinned to a fixed epoch so server and client render identically.
 3. Run `supabase/seed.sql` for three Arenas, eight Projects, and their entries.
 4. Copy the project URL, anon key, and service role key into `.env.local`.
 
-The schema ships `arena_status` and `project_category` enums, six tables, an `arena_standings` view
-that computes rank with a window function, RLS on every table, and four `SECURITY DEFINER` functions
-that match the API routes one to one:
+Phase 2 schema covers Builders, project ownership, payments, Arena lifecycle
+(`draft → registration → full → live → finished`), entry review, impressions, fraud flags,
+Arena Rating history, and rank snapshots. Fresh projects run `supabase/schema.sql`. Existing
+Phase 1 databases run `supabase/migrations/002_phase2_commercial.sql` then the function/RLS
+sections of `schema.sql`.
 
-| Function                                | Called by                  |
-| --------------------------------------- | -------------------------- |
-| `record_support(project_slug, arena_slug)` | `POST /api/support`     |
-| `record_click(project_slug, arena_slug)`   | `POST /api/click`       |
-| `create_paid_entry(...)`                   | `POST /api/stripe/webhook` |
-| `finalize_arena(arena_slug)`               | Operator, when a clock stops |
+Scoring is server-side only. `arena_entries.score` is a generated column
+(`supporters + unique_visits * 2`). Payments never touch that formula.
 
-Reads are public on Projects, Arenas, entries, and the standings view. Support and click rows are
-insert-only for anonymous visitors and readable by the service role alone. `create_paid_entry` and
-`finalize_arena` are service role only.
+Key RPCs (service role):
 
-`supports` deduplicates per visitor per entry; clicks do not. `entries.score` is a stored generated
-column, `supporters * 3 + clicks`.
+| Function | Called by |
+| --- | --- |
+| `start_checkout_entry` | `POST /api/checkout` |
+| `confirm_paid_entry` | Stripe webhook |
+| `approve_entry` / `reject_entry` | Admin entry review |
+| `reconcile_arenas` | Cron + lazy reads |
+| `start_arena` / `finalize_arena_by_id` | Lifecycle |
+| `record_support` / `record_outbound_visit` / `record_impression` | Public events |
 
 ## Stripe setup
 
@@ -85,9 +89,16 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 
 3. Copy the printed `whsec_...` into `STRIPE_WEBHOOK_SECRET`.
 
-Entries become real only in the webhook, never on the client success redirect, which a visitor can
-reach without paying. The webhook verifies the signature, then calls `create_paid_entry`, which is
-idempotent on the Checkout session id so redelivery is harmless. Zero-fee Arenas bypass Checkout.
+Entries become real only in the webhook, never on the client success redirect. The handler verifies
+the Stripe signature, records `stripe_events` for idempotency, and fulfills
+`checkout.session.completed` plus `checkout.session.async_payment_succeeded` only when
+`payment_status` is paid. Zero-fee Arenas skip Checkout and still land in pending review.
+
+Prefer a [restricted API key](https://docs.stripe.com/keys/restricted-api-keys) with Checkout and
+Refund permissions over a secret key. Store it as a sensitive Vercel environment variable.
+
+Webhook events to enable: `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+`checkout.session.async_payment_failed`, `payment_intent.payment_failed`, `charge.refunded`.
 
 ## Deployment
 
@@ -97,9 +108,11 @@ Deploy to Vercel.
 2. Set all six variables from `.env.example` in Project Settings → Environment Variables.
    `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` are server only.
 3. Set `NEXT_PUBLIC_SITE_URL` to the production origin, without a trailing slash.
-4. Add a Stripe webhook endpoint at `https://<domain>/api/stripe/webhook` for
-   `checkout.session.completed` and store its signing secret.
-5. Add the production domain to Supabase → Authentication → URL Configuration.
+4. Add a Stripe webhook endpoint at `https://<domain>/api/stripe/webhook` and store its signing secret.
+5. Add the production domain to Supabase → Authentication → URL Configuration, including
+   `https://<domain>/auth/callback`.
+6. Set `ADMIN_EMAILS` to bootstrap the first operator. Optional: `CRON_SECRET`, `RESEND_API_KEY`.
+7. Vercel Cron hits `/api/cron/reconcile` every minute. Reads also lazily reconcile Arena state.
 
 `middleware.ts` refreshes the Supabase session on every request and is a no-op when the environment
 is unset. Its matcher excludes static assets and the Stripe webhook, whose raw body must not be
@@ -114,14 +127,17 @@ touched.
 | `/arena/[slug]`    | Page      | One Arena: timing strip, full leaderboard, entrants             |
 | `/project/[slug]`  | Page      | One Project: career stats, Arena history, support and visit     |
 | `/hall-of-fame`    | Page      | Champions by Arena, Arena Rating table                          |
-| `/enter`           | Page      | Entry form, fee, Checkout handoff (`/enter/success` on return)  |
-| `/dashboard`       | Page      | Builder view: own Projects, results, account                    |
+| `/enter`           | Page      | Select Project, pay, pending review (`/enter/success` on return) |
+| `/login`           | Page      | Builder magic link                                               |
+| `/dashboard`       | Page      | Builder: Projects, live rank, upcoming, performance              |
+| `/admin`           | Page      | Operator: Arenas, entries, payments, fraud, analytics            |
 
 | API                    | Method | Body / Result                                                              |
 | ---------------------- | ------ | -------------------------------------------------------------------------- |
-| `/api/support`         | POST   | `{ projectSlug, arenaSlug }` → records one Supporter                        |
-| `/api/click`           | POST   | `{ projectSlug, arenaSlug? }` → records an outbound visit                    |
-| `/api/checkout`        | POST   | `{ arenaSlug, projectName, tagline, url, category, description?, builderEmail }` → `{ url }` |
-| `/api/stripe/webhook`  | POST   | Stripe signed event → creates the paid entry                                |
+| `/api/support`         | POST   | `{ projectSlug, arenaSlug, visitorId }` → records one valid supporter       |
+| `/api/impressions`     | POST   | `{ projectSlug, arenaSlug, visitorId }` → viewport impression               |
+| `/api/checkout`        | POST   | `{ arenaSlug, projectId }` → Stripe Checkout URL                            |
+| `/api/stripe/webhook`  | POST   | Stripe signed event → confirms payment, creates pending-review entry        |
+| `/api/cron/reconcile`  | GET    | Starts and finishes Arenas from server time                                 |
 
 Dynamic routes are statically generated via `generateStaticParams`.

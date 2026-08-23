@@ -8,6 +8,7 @@ import type { Standing } from '@/lib/types';
 import { cn } from '@/lib/cn';
 import { formatNumber, formatRank } from '@/lib/format';
 import { getVisitorId } from '@/lib/visitor';
+import { ImpressionTracker } from './impression-tracker';
 import { ProjectLogo } from './project-logo';
 import { SupportButton } from './support-button';
 
@@ -53,6 +54,7 @@ export function ProjectCard({
       )}
     >
       {standing.rank === 1 ? <span className="absolute inset-y-0 left-0 w-px bg-gold/70" aria-hidden /> : null}
+      {live ? <ImpressionTracker projectSlug={standing.project.slug} arenaSlug={arenaSlug} /> : null}
 
       <div className="grid grid-cols-[42px_1fr] gap-x-3 gap-y-4 md:grid-cols-[52px_48px_minmax(0,1fr)_118px_66px_154px] md:items-center md:gap-x-4">
         <div className="flex flex-col gap-1.5 self-start md:self-center">

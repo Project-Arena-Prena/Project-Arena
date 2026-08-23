@@ -73,25 +73,56 @@ export function LiveDot({ className }: { className?: string }) {
   );
 }
 
-export function StatusBadge({ status }: { status: 'live' | 'upcoming' | 'finished' }) {
-  if (status === 'live') {
-    return (
-      <span className="inline-flex items-center gap-1.5 border border-live/30 bg-live/10 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-live">
-        <LiveDot />
-        Live
-      </span>
-    );
-  }
-  if (status === 'upcoming') {
-    return (
-      <span className="inline-flex items-center gap-1.5 border border-white/15 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-bone-dim">
-        Upcoming
-      </span>
-    );
-  }
+export function StatusBadge({
+  status,
+}: {
+  status:
+    | 'live'
+    | 'upcoming'
+    | 'finished'
+    | 'draft'
+    | 'registration'
+    | 'full'
+    | 'cancelled'
+    | 'pending_review'
+    | 'pending_payment'
+    | 'approved'
+    | 'rejected'
+    | 'competing'
+    | 'withdrawn'
+    | 'disqualified'
+    | 'paid'
+    | 'pending'
+    | 'failed'
+    | 'refunded'
+    | 'overflow';
+}) {
+  const map: Record<string, { label: string; className: string; live?: boolean }> = {
+    live: { label: 'Live', className: 'border-live/30 bg-live/10 text-live', live: true },
+    competing: { label: 'Competing', className: 'border-live/30 bg-live/10 text-live', live: true },
+    upcoming: { label: 'Upcoming', className: 'border-white/15 text-bone-dim' },
+    registration: { label: 'Registration', className: 'border-white/15 text-bone-dim' },
+    full: { label: 'Arena Full', className: 'border-arena/40 text-arena' },
+    draft: { label: 'Draft', className: 'border-white/10 text-bone-faint' },
+    finished: { label: 'Finished', className: 'border-white/10 text-bone-faint' },
+    cancelled: { label: 'Cancelled', className: 'border-arena/30 text-arena' },
+    pending_review: { label: 'Pending Review', className: 'border-gold/30 text-gold' },
+    pending_payment: { label: 'Pending Payment', className: 'border-white/15 text-bone-dim' },
+    approved: { label: 'Approved', className: 'border-live/30 text-live' },
+    rejected: { label: 'Rejected', className: 'border-arena/30 text-arena' },
+    withdrawn: { label: 'Withdrawn', className: 'border-white/10 text-bone-faint' },
+    disqualified: { label: 'Disqualified', className: 'border-arena/30 text-arena' },
+    paid: { label: 'Paid', className: 'border-live/30 text-live' },
+    pending: { label: 'Pending', className: 'border-white/15 text-bone-dim' },
+    failed: { label: 'Failed', className: 'border-arena/30 text-arena' },
+    refunded: { label: 'Refunded', className: 'border-white/15 text-bone-dim' },
+    overflow: { label: 'Needs Refund', className: 'border-arena/30 text-arena' },
+  };
+  const item = map[status] ?? { label: status, className: 'border-white/10 text-bone-faint' };
   return (
-    <span className="inline-flex items-center gap-1.5 border border-white/10 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-bone-faint">
-        Finished
+    <span className={`inline-flex items-center gap-1.5 border px-2 py-1 font-mono text-[10px] uppercase tracking-widest ${item.className}`}>
+      {item.live ? <LiveDot /> : null}
+      {item.label}
     </span>
   );
 }

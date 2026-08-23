@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { clientIp, hashSignal, trackEvent } from '@/lib/analytics';
 import { getProject } from '@/lib/queries';
 import { createAdminClient } from '@/lib/supabase/server';
 import { VISITOR_COOKIE_NAME } from '@/lib/visitor';
@@ -39,7 +40,11 @@ export async function GET(
       p_project_slug: project.slug,
       p_arena_slug: arenaSlug,
       p_visitor_id: visitorId,
+      p_ip_hash: hashSignal(clientIp(request)),
+      p_ua_hash: hashSignal(request.headers.get('user-agent')),
+      p_session_id: hashSignal(request.headers.get('cookie')),
     });
+    await trackEvent('project_outbound_clicked', { visitorId, payload: { projectSlug: project.slug } });
   }
 
   const response = NextResponse.redirect(project.url, 307);

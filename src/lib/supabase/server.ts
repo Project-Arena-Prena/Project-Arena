@@ -32,6 +32,14 @@ export async function getSessionUser() {
   return data.user ?? null;
 }
 
+/** Cookie-less anon client for generateStaticParams and other non-request contexts. */
+export function createAnonClient() {
+  if (!supabaseConfig) return null;
+  return createSupabaseClient(supabaseConfig.url, supabaseConfig.anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 /** Elevated client for validated Route Handlers only. Never import this from a client component. */
 export function createAdminClient() {
   if (!supabaseSecretConfig) return null;

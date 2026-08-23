@@ -15,9 +15,27 @@ function tone(n: number): string {
   return n === 0 ? 'text-bone-faint' : 'text-bone';
 }
 
-export function CareerStats({ project }: { project: Project }) {
+export function CareerStats({
+  project,
+  lastDelta,
+  percentile,
+}: {
+  project: Project;
+  lastDelta?: number;
+  percentile?: string | null;
+}) {
+  const delta =
+    typeof lastDelta === 'number' && lastDelta !== 0
+      ? `${lastDelta > 0 ? '▲ +' : '▼ '}${lastDelta} last Arena`
+      : undefined;
   const cells: Cell[] = [
-    { label: 'Arena Rating', value: formatNumber(project.arenaRating), tone: 'text-bone', lead: true, suffix: 'Top 8%' },
+    {
+      label: 'Arena Rating',
+      value: formatNumber(project.arenaRating),
+      tone: 'text-bone',
+      lead: true,
+      suffix: [percentile, delta].filter(Boolean).join(' · ') || undefined,
+    },
     { label: 'Appearances', value: formatNumber(project.appearances), tone: tone(project.appearances) },
     { label: 'Wins', value: formatNumber(project.wins), tone: project.wins > 0 ? 'text-gold' : 'text-bone-faint' },
     { label: 'Podiums', value: formatNumber(project.podiums), tone: tone(project.podiums) },

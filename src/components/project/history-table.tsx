@@ -45,7 +45,8 @@ export function HistoryTable({ entries }: { entries: ProjectHistoryEntry[] }) {
               href={`/arena/${entry.arenaSlug}`}
               className="truncate text-[15px] font-medium tracking-tight text-bone transition-colors duration-200 hover:text-arena"
             >
-              {entry.arenaName}
+              {entry.rank === 1 ? '🏆 Champion · ' : ''}
+            {entry.arenaName}
             </Link>
             <span className="num text-[10px] uppercase tracking-widest text-bone-faint md:hidden">
               {formatDate(entry.endedAt)}

@@ -30,22 +30,26 @@ on conflict (slug) do update set
   category = excluded.category;
 
 insert into public.arenas (
-  name, slug, number, description, starts_at, ends_at, status,
-  max_entries, entry_price, spectators
+  name, slug, number, description, category, starts_at, ends_at, status,
+  registration_opens_at, registration_closes_at, max_entries, entry_price, spectators, eligibility_text
 ) values
-  ('Launch Arena #000', 'launch-arena-000', 0, 'The first Arena. Everything was allowed.', now() - interval '24 days', now() - interval '22 days', 'finished', 32, 1900, 12904),
-  ('Open Arena #001', 'open-arena-001', 1, 'Open category. Any internet project. No rules beyond the clock.', now() - interval '40 hours', now() + interval '8 hours', 'live', 32, 1900, 18421),
-  ('Open Arena #002', 'open-arena-002', 2, 'Any internet project. Thirty-two spots. The next open field.', now() + interval '8 days', now() + interval '10 days', 'upcoming', 32, 1900, 0)
+  ('Launch Arena #000', 'launch-arena-000', 0, 'The first Arena. Everything was allowed.', 'Open', now() - interval '24 days', now() - interval '22 days', 'finished', now() - interval '31 days', now() - interval '24 days', 32, 1900, 12904, 'Any internet project with a public URL.'),
+  ('Open Arena #001', 'open-arena-001', 1, 'Open category. Any internet project. No rules beyond the clock.', 'Open', now() - interval '40 hours', now() + interval '8 hours', 'live', now() - interval '10 days', now() - interval '40 hours', 32, 1900, 18421, 'Any internet project with a public URL.'),
+  ('Open Arena #002', 'open-arena-002', 2, 'Any internet project. Thirty-two spots. The next open field.', 'Open', now() + interval '8 days', now() + interval '10 days', 'registration', now() - interval '2 days', now() + interval '8 days', 32, 2900, 0, 'Any internet project with a public URL.')
 on conflict (slug) do update set
   starts_at = excluded.starts_at,
   ends_at = excluded.ends_at,
   status = excluded.status,
+  category = excluded.category,
+  registration_opens_at = excluded.registration_opens_at,
+  registration_closes_at = excluded.registration_closes_at,
   max_entries = excluded.max_entries,
   entry_price = excluded.entry_price,
-  spectators = excluded.spectators;
+  spectators = excluded.spectators,
+  eligibility_text = excluded.eligibility_text;
 
 insert into public.arena_entries (arena_id, project_id, status, supporter_count, unique_visit_count)
-select a.id, p.id, 'confirmed', seeded.supporters, seeded.visits
+select a.id, p.id, 'competing', seeded.supporters, seeded.visits
 from (values
   ('drift', 3842, 2180), ('kernelpad', 3721, 2054), ('nightmarket', 3498, 1911),
   ('plumb', 3220, 1782), ('glyphset', 3014, 1640), ('tallyhouse', 2841, 1512),
@@ -58,11 +62,11 @@ join public.projects p on p.slug = seeded.slug
 cross join public.arenas a
 where a.slug = 'open-arena-001'
 on conflict (arena_id, project_id) do update set
-  status = 'confirmed', supporter_count = excluded.supporter_count,
+  status = 'competing', supporter_count = excluded.supporter_count,
   unique_visit_count = excluded.unique_visit_count;
 
 insert into public.arena_entries (arena_id, project_id, status, supporter_count, unique_visit_count, final_rank)
-select a.id, p.id, 'confirmed', seeded.supporters, seeded.visits, seeded.final_rank
+select a.id, p.id, 'finished', seeded.supporters, seeded.visits, seeded.final_rank
 from (values
   ('kernelpad', 2913, 1410, 1), ('drift', 2817, 1350, 2), ('plumb', 2604, 1240, 3),
   ('tallyhouse', 2388, 1120, 4), ('nightmarket', 2201, 1015, 5), ('glyphset', 2044, 940, 6),
@@ -72,11 +76,11 @@ join public.projects p on p.slug = seeded.slug
 cross join public.arenas a
 where a.slug = 'launch-arena-000'
 on conflict (arena_id, project_id) do update set
-  status = 'confirmed', supporter_count = excluded.supporter_count,
+  status = 'finished', supporter_count = excluded.supporter_count,
   unique_visit_count = excluded.unique_visit_count, final_rank = excluded.final_rank;
 
 insert into public.arena_entries (arena_id, project_id, status)
-select a.id, p.id, 'confirmed'
+select a.id, p.id, 'approved'
 from public.projects p cross join public.arenas a
 where a.slug = 'open-arena-002'
 on conflict (arena_id, project_id) do nothing;

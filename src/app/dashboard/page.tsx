@@ -1,214 +1,224 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { AccountStrip } from '@/components/dashboard/account-strip';
-import { ProjectRow } from '@/components/dashboard/project-row';
-import { Reveal } from '@/components/reveal';
-import { ResultsTable, type DashboardResult } from '@/components/dashboard/results-table';
-import { SummaryBar } from '@/components/dashboard/summary-bar';
-import { Countdown } from '@/components/countdown';
-import { Leaderboard } from '@/components/leaderboard';
+import { requireBuilder } from '@/lib/auth';
+import { getBuilderDashboard } from '@/lib/builder-queries';
+
 import {
   ButtonLink,
   Container,
   EmptyState,
   Label,
   Panel,
-  Rule,
   SectionHeader,
   StatusBadge,
 } from '@/components/ui';
-import { formatNumber, formatRank } from '@/lib/format';
-import {
-  getBuilderProjects,
-  getLiveArena,
-  getLiveStandingForProject,
-  getProjectHistory,
-  getStandings,
-} from '@/lib/queries';
-import { getSessionUser } from '@/lib/supabase/server';
+import { Countdown } from '@/components/countdown';
+import { Reveal } from '@/components/reveal';
+import { formatMoney, formatNumber, formatRank } from '@/lib/format';
+import { shareText, xIntentUrl } from '@/lib/share';
+import { siteUrl } from '@/lib/stripe';
 
 export const metadata: Metadata = {
   title: 'Builder Dashboard',
-  description: 'Your Projects, your live position, and your Arena record.',
+  description: 'What is my Project competing in, and is Project Arena delivering value?',
 };
 
-const RESULT_LIMIT = 10;
-
 export default async function DashboardPage() {
-  const [user, projects, liveArena] = await Promise.all([
-    getSessionUser(),
-    getBuilderProjects(),
-    getLiveArena(),
-  ]);
-
-  const [histories, liveStandings, arenaStandings] = await Promise.all([
-    Promise.all(projects.map((p) => getProjectHistory(p.slug))),
-    Promise.all(projects.map((p) => getLiveStandingForProject(p.slug))),
-    liveArena ? getStandings(liveArena.slug) : Promise.resolve([]),
-  ]);
-
-  const ranks = new Map(
-    projects.flatMap((p, i) => {
-      const standing = liveStandings[i];
-      return standing ? [[p.slug, standing.rank] as const] : [];
-    }),
-  );
-
-  const bestSlug = [...ranks.entries()].sort((a, b) => a[1] - b[1])[0]?.[0] ?? null;
-  const bestIndex = bestSlug ? arenaStandings.findIndex((s) => s.project.slug === bestSlug) : -1;
-  const livePanel =
-    liveArena && bestIndex >= 0
-      ? {
-          arena: liveArena,
-          standing: arenaStandings[bestIndex],
-          entrants: arenaStandings.length,
-          window: arenaStandings.slice(Math.max(0, bestIndex - 2), bestIndex + 3),
-        }
-      : null;
-
-  const results: DashboardResult[] = projects
-    .flatMap((p, i) =>
-      histories[i].map((entry) => ({ projectSlug: p.slug, projectName: p.name, entry })),
-    )
-    .sort((a, b) => Date.parse(b.entry.endedAt) - Date.parse(a.entry.endedAt))
-    .slice(0, RESULT_LIMIT);
+  const ctx = await requireBuilder('/dashboard');
+  const { projects, live, upcoming, entries } = await getBuilderDashboard(ctx.builder.id);
+  const next = upcoming.find((arena) => arena.status === 'registration') ?? upcoming[0] ?? null;
 
   return (
-    <div className="pb-20">
-      <AccountStrip email={user?.email ?? null} />
-
+    <>
       <section className="border-b hairline">
         <Container className="py-10 lg:py-12">
-          <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between sm:gap-10">
-            <div className="flex min-w-0 flex-col gap-3">
+          <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-3">
               <Label>Builder Dashboard</Label>
-              <h1 className="text-[42px] font-semibold leading-[0.9] tracking-headline sm:text-5xl lg:text-6xl">
+              <h1 className="text-[42px] font-semibold leading-[0.9] tracking-headline sm:text-5xl">
                 Your projects
               </h1>
+              <p className="max-w-xl text-sm text-bone-dim">
+                What is competing, what it delivered, and where you enter next.
+              </p>
             </div>
-            <ButtonLink href="/enter" size="lg" className="w-full shrink-0 sm:w-auto">
-              Enter a Project
+            <ButtonLink href="/dashboard/projects/new" size="lg" className="w-full sm:w-auto">
+              Create Project
             </ButtonLink>
           </Reveal>
         </Container>
       </section>
 
       {projects.length === 0 ? (
-        <Container className="pt-12 sm:pt-16">
-          <Reveal className="flex flex-col items-center gap-6">
-            <div className="w-full">
-              <EmptyState
-                title="No projects yet"
-                hint="Enter a Project in an Arena and your record, standings, and results appear here."
-              />
-            </div>
-            <ButtonLink href="/enter" size="lg">
-              Enter a Project
+        <Container className="pt-16">
+          <EmptyState
+            title="You haven't created a project yet"
+            hint="A Project is what competes. Create one, then enter an Arena."
+          />
+          <div className="mt-6 flex justify-center">
+            <ButtonLink href="/dashboard/projects/new" size="lg">
+              Create your first Project
             </ButtonLink>
-          </Reveal>
+          </div>
         </Container>
       ) : (
         <>
-          <Container className="pt-10 sm:pt-12">
-            <Reveal delay={0.04}>
-              <SummaryBar projects={projects} />
-            </Reveal>
+          <Container className="pt-10">
+            <SectionHeader eyebrow="Roster" title="Your Projects" />
+            <Panel>
+              {projects.map((project) => (
+                <div
+                  key={project.id}
+                  className="flex flex-col gap-3 border-b hairline px-5 py-5 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <Link
+                      href={`/dashboard/projects/${project.id}`}
+                      className="text-lg font-medium tracking-tight hover:text-arena"
+                    >
+                      {project.name}
+                    </Link>
+                    <p className="mt-1 text-xs text-bone-faint">{project.category}</p>
+                  </div>
+                  <div className="flex flex-col gap-1 sm:items-end">
+                    <Label>Arena Rating</Label>
+                    <span className="num text-2xl">{formatNumber(project.arenaRating)}</span>
+                  </div>
+                </div>
+              ))}
+            </Panel>
           </Container>
 
-          {livePanel ? (
-            <Container className="pt-12 sm:pt-16">
-              <Reveal delay={0.08}>
-                <SectionHeader eyebrow="Now" title="Live position" />
-                <Panel>
-                  <div className="flex flex-col gap-6 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
-                    <div className="flex min-w-0 flex-col gap-3">
-                      <div className="flex flex-wrap items-center gap-3">
+          <Container className="pt-12">
+            <SectionHeader eyebrow="Now" title="Live now" />
+            {live.length === 0 ? (
+              <EmptyState title="No live entries" hint="When an Arena starts, your rank lands here." />
+            ) : (
+              <div className="flex flex-col gap-6">
+                {live.map(({ project, arena, standing, movement }) => {
+                  const url = `${siteUrl()}/arena/${arena.slug}`;
+                  const text = shareText('live', {
+                    projectName: project.name,
+                    arenaName: arena.name,
+                    rank: standing.rank,
+                    url,
+                  });
+                  return (
+                    <Panel key={`${project.id}:${arena.id}`}>
+                      <div className="flex items-center justify-between gap-3 border-b hairline px-5 py-3">
+                        <span className="font-mono text-xs uppercase tracking-widest">{arena.name}</span>
                         <StatusBadge status="live" />
-                        <Link
-                          href={`/arena/${livePanel.arena.slug}`}
-                          className="text-xl font-semibold tracking-headline transition-colors duration-200 hover:text-arena"
-                        >
-                          {livePanel.arena.name}
-                        </Link>
                       </div>
-                      <p className="num text-sm text-bone-dim">
-                        You are P{formatRank(livePanel.standing.rank)} of{' '}
-                        {formatNumber(livePanel.entrants)}.
-                        <span className="mx-2 text-bone-faint/50">/</span>
-                        <span className="text-bone-faint">{livePanel.standing.project.name}</span>
+                      <div className="grid grid-cols-2 gap-6 px-5 py-6 md:grid-cols-4">
+                        <div>
+                          <Label>Current rank</Label>
+                          <p className="num mt-2 text-4xl text-bone">#{formatRank(standing.rank)}</p>
+                          <p className={`mt-2 font-mono text-[10px] uppercase tracking-widest ${movement > 0 ? 'text-gain' : movement < 0 ? 'text-arena' : 'text-bone-faint'}`}>
+                            {movement > 0 ? `↑ ${movement} positions` : movement < 0 ? `↓ ${Math.abs(movement)} positions` : 'No move'}
+                          </p>
+                        </div>
+                        <div>
+                          <Label>Points</Label>
+                          <p className="num mt-2 text-2xl">{formatNumber(standing.score)}</p>
+                        </div>
+                        <div>
+                          <Label>Supporters</Label>
+                          <p className="num mt-2 text-2xl">{formatNumber(standing.supporters)}</p>
+                        </div>
+                        <div>
+                          <Label>Project visits</Label>
+                          <p className="num mt-2 text-2xl">{formatNumber(standing.clicks)}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-3 border-t hairline px-5 py-4">
+                        <ButtonLink href={`/arena/${arena.slug}`} size="sm">
+                          View live
+                        </ButtonLink>
+                        <ButtonLink
+                          href={`/dashboard/projects/${project.id}/arenas/${arena.id}`}
+                          variant="secondary"
+                          size="sm"
+                        >
+                          View performance
+                        </ButtonLink>
+                        <a
+                          href={xIntentUrl(text)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-8 items-center border border-white/15 px-3 font-mono text-[10px] uppercase tracking-widest text-bone-dim hover:text-bone"
+                        >
+                          Share ranking
+                        </a>
+                      </div>
+                    </Panel>
+                  );
+                })}
+              </div>
+            )}
+          </Container>
+
+          <Container className="pt-12">
+            <SectionHeader eyebrow="Next" title="Upcoming" />
+            {next ? (
+              <Panel>
+                <div className="flex flex-col gap-6 p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold tracking-headline">{next.name}</h3>
+                    <p className="mt-2 text-xs text-bone-faint">{next.category}</p>
+                    <div className="mt-4 flex flex-wrap gap-6">
+                      <div>
+                        <Label>Starts</Label>
+                        <div className="mt-2">
+                          <Countdown target={next.startsAt} size="sm" showDays />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Spots</Label>
+                        <p className="num mt-2 text-sm">
+                          {next.entrantCount} / {next.entrantCap} filled
+                        </p>
+                      </div>
+                      <div>
+                        <Label>Entry</Label>
+                        <p className="num mt-2 text-sm">
+                          {next.entryFeeCents === 0 ? 'Free' : formatMoney(next.entryFeeCents)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <ButtonLink
+                    href={next.status === 'registration' ? `/enter?arena=${next.slug}` : `/arena/${next.slug}`}
+                    size="lg"
+                    className="w-full sm:w-auto"
+                  >
+                    {next.status === 'registration' ? 'Enter Arena' : 'View Arena'}
+                  </ButtonLink>
+                </div>
+              </Panel>
+            ) : (
+              <EmptyState title="No Arenas open yet" hint="The next competition is being prepared." />
+            )}
+          </Container>
+
+          {entries.some((item) => item.entry.status === 'pending_review') ? (
+            <Container className="pt-12">
+              <SectionHeader eyebrow="Review" title="Pending review" />
+              <Panel>
+                {entries
+                  .filter((item) => item.entry.status === 'pending_review')
+                  .map((item) => (
+                    <div key={item.entry.id} className="border-b hairline px-5 py-4 last:border-b-0">
+                      <p className="font-mono text-xs uppercase tracking-widest">{item.arena.name}</p>
+                      <p className="mt-2 text-sm text-bone-dim">
+                        {item.project.name} — payment confirmed. Your Project will appear when approved.
                       </p>
                     </div>
-                    <div className="flex flex-col gap-2 lg:items-end">
-                      <Label>Closes In</Label>
-                      <Countdown target={livePanel.arena.endsAt} size="md" />
-                    </div>
-                  </div>
-
-                  <Rule />
-
-                  <Leaderboard
-                    standings={livePanel.window}
-                    arenaSlug={livePanel.arena.slug}
-                    compact
-                    interactive={false}
-                  />
-                </Panel>
-              </Reveal>
+                  ))}
+              </Panel>
             </Container>
           ) : null}
-
-          <Container className="pt-12 sm:pt-16">
-            <Reveal delay={0.12}>
-              <SectionHeader
-                eyebrow="Roster"
-                title="Projects"
-                action={
-                  <span className="num hidden text-xs text-bone-faint sm:block">
-                    {formatNumber(projects.length)} entered
-                  </span>
-                }
-              />
-              <Panel>
-                {projects.map((project) => (
-                  <ProjectRow
-                    key={project.slug}
-                    project={project}
-                    liveRank={ranks.get(project.slug) ?? null}
-                  />
-                ))}
-              </Panel>
-            </Reveal>
-          </Container>
-
-          <Container className="pt-12 sm:pt-16">
-            <Reveal delay={0.16}>
-              <SectionHeader
-                eyebrow="Record"
-                title="Recent results"
-                action={
-                  results.length > 0 ? (
-                    <span className="num hidden text-xs text-bone-faint sm:block">
-                      Last {formatNumber(results.length)}
-                    </span>
-                  ) : null
-                }
-              />
-              {results.length > 0 ? (
-                <Panel>
-                  <div className="overflow-x-auto">
-                    <ResultsTable rows={results} />
-                  </div>
-                </Panel>
-              ) : (
-                <EmptyState
-                  title="No completed Arenas yet"
-                  hint="Results appear here the moment one of your Projects finishes an Arena."
-                />
-              )}
-            </Reveal>
-          </Container>
         </>
       )}
-    </div>
+    </>
   );
 }

@@ -76,9 +76,9 @@ export function ChampionRow({ result, featured = false }: { result: ArenaResult;
         </div>
 
         <div className="flex flex-wrap gap-x-9 gap-y-5 lg:justify-end">
+          <ChampionStat label="Final score" value={formatNumber(champion.score)} />
+          <ChampionStat label="Project visits" value={formatNumber(champion.clicks)} />
           <ChampionStat label="Supporters" value={formatNumber(champion.supporters)} />
-          <ChampionStat label="Visits" value={formatNumber(champion.clicks)} />
-          <ChampionStat label="Share" value={`${champion.share.toFixed(1)}%`} />
           <ChampionStat label="Field" value={formatNumber(arena.entrantCount)} />
         </div>
 

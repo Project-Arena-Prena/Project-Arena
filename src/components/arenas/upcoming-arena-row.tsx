@@ -62,12 +62,18 @@ export function UpcomingArenaRow({ arena }: { arena: Arena }) {
         <Countdown target={arena.startsAt} size="sm" showDays />
       </div>
 
-      <Link
-        href={`/enter?arena=${arena.slug}`}
-        className={cn(buttonClass('secondary', 'sm'), 'w-full lg:w-auto')}
-      >
-        Enter
-      </Link>
+      {arena.status === 'full' || arena.entrantCount >= arena.entrantCap ? (
+        <Link href="/arenas" className={cn(buttonClass('secondary', 'sm'), 'w-full lg:w-auto')}>
+          Arena full
+        </Link>
+      ) : (
+        <Link
+          href={`/enter?arena=${arena.slug}`}
+          className={cn(buttonClass('secondary', 'sm'), 'w-full lg:w-auto')}
+        >
+          Enter
+        </Link>
+      )}
     </div>
   );
 }
