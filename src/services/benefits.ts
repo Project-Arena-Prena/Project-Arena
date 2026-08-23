@@ -69,19 +69,21 @@ export async function getBuilderPrenaBenefits(builderId: string): Promise<PrenaB
     thresholds,
   };
 
-  const wallet = await getPrimaryWallet(builderId);
-  if (!wallet) return empty;
-
+  // The finished-Arena count keys off the Builder, not the wallet, so it need
+  // not wait behind the wallet lookup. Only the balance genuinely depends on it.
   const supabase = createAdminClient();
-  let completedArenas = 0;
-  if (supabase) {
-    const { count } = await supabase
-      .from('arena_entries')
-      .select('id', { count: 'exact', head: true })
-      .eq('builder_id', builderId)
-      .eq('status', 'finished');
-    completedArenas = count ?? 0;
-  }
+  const [wallet, completedArenas] = await Promise.all([
+    getPrimaryWallet(builderId),
+    supabase
+      ? supabase
+          .from('arena_entries')
+          .select('id', { count: 'exact', head: true })
+          .eq('builder_id', builderId)
+          .eq('status', 'finished')
+          .then(({ count }) => count ?? 0)
+      : Promise.resolve(0),
+  ]);
+  if (!wallet) return empty;
 
   const balance = await getPrenaBalance(wallet.address);
   if (!balance.ok) {
@@ -115,6 +117,14 @@ export async function getBuilderPrenaBenefits(builderId: string): Promise<PrenaB
 /**
  * Whether a Builder may register for an Arena before general registration.
  * Affects timing only — never capacity priority, seeding, or score.
+ *
+ * NOT YET ENFORCED. Both entry gates (start_checkout_entry, start_prena_entry)
+ * raise `registration_not_open` unconditionally, and neither reads
+ * `prena_early_registration_at`. Wiring this needs the eligibility result
+ * passed into both gates as a server-computed argument — the balance it
+ * depends on lives off-chain, so SQL cannot decide it alone. Until then no
+ * surface advertises the benefit, because a badge that promises early access
+ * and then bounces the Builder at the door is worse than no badge.
  */
 export async function canRegisterEarly(input: {
   builderId: string;

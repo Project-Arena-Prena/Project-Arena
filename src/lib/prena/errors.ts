@@ -105,3 +105,46 @@ const RETRYABLE = new Set([
 export function isRetryable(code: string | null | undefined): boolean {
   return Boolean(code && RETRYABLE.has(code));
 }
+
+/**
+ * Code → HTTP status. Lives beside PRENA_ERRORS so a new failure code gets its
+ * copy and its status in one edit; four routes previously kept overlapping
+ * partial copies of this and had already drifted.
+ */
+export const PRENA_ERROR_STATUS: Record<string, number> = {
+  auth_required: 401,
+  forbidden: 403,
+  not_project_owner: 403,
+  wallet_not_verified: 403,
+  arena_not_found: 404,
+  allocation_not_found: 404,
+  payment_not_found: 404,
+  not_found: 404,
+  wallet_not_linked: 404,
+  already_entered: 409,
+  already_claimed: 409,
+  arena_full: 409,
+  arena_closed: 409,
+  registration_closed: 409,
+  registration_not_open: 409,
+  prena_entry_disabled: 409,
+  not_claimable: 409,
+  nonce_used: 409,
+  quote_consumed: 409,
+  wallet_taken: 409,
+  wallet_mismatch: 409,
+  reward_pending: 409,
+  payment_pending: 409,
+  nonce_expired: 410,
+  quote_expired: 410,
+  rate_limited: 429,
+  not_configured: 503,
+  prena_not_configured: 503,
+  treasury_not_configured: 503,
+  price_unavailable: 503,
+  rpc_unavailable: 503,
+};
+
+export function prenaErrorStatus(code: string | null | undefined, fallback = 400): number {
+  return (code && PRENA_ERROR_STATUS[code]) || fallback;
+}

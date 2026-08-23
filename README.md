@@ -126,6 +126,21 @@ Deploy to Vercel.
 is unset. Its matcher excludes static assets and the Stripe webhook, whose raw body must not be
 touched.
 
+### Cron and the Arena clock
+
+`vercel.json` schedules `/api/cron/reconcile` **daily** (`0 3 * * *`). That is not a
+preference — Vercel's Hobby plan rejects any cron that would run more than once per day,
+and a per-minute schedule fails the deployment outright.
+
+The Arena clock does not depend on it. `reconcileArenas()` runs lazily on reads with a
+15s TTL, so any page view advances Arena state. The cron is a backstop for windows with
+no traffic at all; without it, an Arena whose start or end time passes unvisited stays in
+its old state until the next visitor arrives.
+
+To restore minute-level precision, either upgrade to Vercel Pro and set the schedule back
+to `* * * * *`, or drive the endpoint from an external scheduler — it accepts
+`Authorization: Bearer $CRON_SECRET` on GET or POST.
+
 ## Routes
 
 | Route              | Type      | Purpose                                                        |

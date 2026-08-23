@@ -288,9 +288,10 @@ export function WalletProvider({
           params: [toHex(message), address],
         })) as string;
         return signature;
-      } catch (cause) {
-        const code = (cause as { code?: number })?.code;
-        setError(code === 4001 ? 'signature_rejected' : 'signature_rejected');
+      } catch {
+        // 4001 (declined) and a provider failure are the same story to a user:
+        // nothing was signed and nothing changed.
+        setError('signature_rejected');
         return null;
       }
     },

@@ -4,6 +4,7 @@ import { getBuilder } from '@/lib/auth';
 import { trackEvent } from '@/lib/analytics';
 import { consumeWalletChallenge, linkWallet } from '@/services/wallet';
 import { rateLimit } from '@/lib/prena/rate-limit';
+import { prenaErrorStatus } from '@/lib/prena/errors';
 
 const Body = z.object({
   nonce: z.string().min(16).max(128),
@@ -11,14 +12,6 @@ const Body = z.object({
   signature: z.string().regex(/^0x[0-9a-fA-F]+$/).max(2000),
 });
 
-const STATUS: Record<string, number> = {
-  auth_required: 401,
-  forbidden: 403,
-  wallet_taken: 409,
-  nonce_used: 409,
-  nonce_expired: 410,
-  rate_limited: 429,
-};
 
 export async function POST(request: Request) {
   const ctx = await getBuilder();
@@ -41,7 +34,7 @@ export async function POST(request: Request) {
   });
   if ('error' in verified) {
     await trackEvent('wallet_link_failed', { builderId: ctx.builder.id, payload: { reason: verified.error } });
-    return NextResponse.json({ error: verified.error }, { status: STATUS[verified.error] ?? 400 });
+    return NextResponse.json({ error: verified.error }, { status: prenaErrorStatus(verified.error) });
   }
 
   const linked = await linkWallet({
@@ -50,7 +43,7 @@ export async function POST(request: Request) {
     chainId: verified.chainId,
   });
   if ('error' in linked) {
-    return NextResponse.json({ error: linked.error }, { status: STATUS[linked.error] ?? 400 });
+    return NextResponse.json({ error: linked.error }, { status: prenaErrorStatus(linked.error) });
   }
 
   await trackEvent('wallet_connected', {

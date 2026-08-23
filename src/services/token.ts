@@ -7,7 +7,6 @@ import { formatTokenAmount } from '@/lib/prena/amount';
 export interface PrenaBalance {
   address: string;
   raw: string;
-  display: string;
   formatted: string;
   decimals: number;
   symbol: string;
@@ -29,7 +28,6 @@ export async function getPrenaBalance(walletAddress: string): Promise<PrenaBalan
       balance: {
         address: walletAddress,
         raw: balance.raw,
-        display: balance.raw,
         formatted: formatTokenAmount(balance.raw, balance.decimals),
         decimals: balance.decimals,
         symbol: balance.symbol,

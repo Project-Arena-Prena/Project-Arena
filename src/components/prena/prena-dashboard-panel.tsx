@@ -37,7 +37,6 @@ export function PrenaDashboardPanel({
         <Label>$PRENA</Label>
         <div className="flex flex-wrap items-center gap-2">
           {benefits.verifiedBuilderEligible ? <PrenaBenefitBadge benefit="verified" /> : null}
-          {benefits.earlyRegistrationEligible ? <PrenaBenefitBadge benefit="early_registration" /> : null}
           <Link
             href="/dashboard/prena"
             className="font-mono text-[10px] uppercase tracking-widest text-bone-faint hover:text-bone"

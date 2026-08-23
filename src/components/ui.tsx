@@ -95,7 +95,11 @@ export function StatusBadge({
     | 'pending'
     | 'failed'
     | 'refunded'
-    | 'overflow';
+    | 'overflow'
+    // Token payment rail.
+    | 'confirming'
+    | 'confirmed'
+    | 'expired';
 }) {
   const map: Record<string, { label: string; className: string; live?: boolean }> = {
     live: { label: 'Live', className: 'border-live/30 bg-live/10 text-live', live: true },
@@ -117,6 +121,9 @@ export function StatusBadge({
     failed: { label: 'Failed', className: 'border-arena/30 text-arena' },
     refunded: { label: 'Refunded', className: 'border-white/15 text-bone-dim' },
     overflow: { label: 'Needs Refund', className: 'border-arena/30 text-arena' },
+    confirming: { label: 'Confirming', className: 'border-white/15 text-bone-dim' },
+    confirmed: { label: 'Confirmed', className: 'border-live/30 text-live' },
+    expired: { label: 'Expired', className: 'border-white/10 text-bone-faint' },
   };
   const item = map[status] ?? { label: status, className: 'border-white/10 text-bone-faint' };
   return (

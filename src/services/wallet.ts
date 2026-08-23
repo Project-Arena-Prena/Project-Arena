@@ -1,7 +1,8 @@
 import { randomBytes } from 'node:crypto';
+import { cache } from 'react';
 import { verifyMessage } from 'viem';
 import { createAdminClient } from '@/lib/supabase/server';
-import { normalizeAddress, prenaServerConfig, isAddressLike } from '@/lib/prena/config';
+import { normalizeAddress, prenaServerConfig } from '@/lib/prena/config';
 
 /**
  * Wallet ↔ Builder linking.
@@ -271,7 +272,11 @@ export async function unlinkWallet(builderId: string, walletId: string): Promise
   return { ok: true };
 }
 
-export async function getBuilderWallets(builderId: string): Promise<BuilderWallet[]> {
+/**
+ * Request-deduped: the dashboard layout, the page, and getBuilderPrenaBenefits
+ * each need this, and supabase-js calls are not deduped the way fetch is.
+ */
+export const getBuilderWallets = cache(async (builderId: string): Promise<BuilderWallet[]> => {
   const supabase = createAdminClient();
   if (!supabase) return [];
   const { data } = await supabase
@@ -281,7 +286,7 @@ export async function getBuilderWallets(builderId: string): Promise<BuilderWalle
     .order('is_primary', { ascending: false })
     .order('created_at', { ascending: true });
   return ((data ?? []) as Array<Record<string, unknown>>).map(toBuilderWallet);
-}
+});
 
 export async function getPrimaryWallet(builderId: string): Promise<BuilderWallet | null> {
   const wallets = await getBuilderWallets(builderId);
@@ -316,4 +321,3 @@ export function toBuilderWallet(row: Record<string, unknown>): BuilderWallet {
   };
 }
 
-export { isAddressLike };

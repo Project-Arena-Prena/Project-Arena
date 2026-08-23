@@ -6,6 +6,7 @@ import { reconcileArenas } from '@/lib/arena-lifecycle';
 import { getArena } from '@/lib/queries';
 import { createPrenaPaymentIntent } from '@/services/tokenPayment';
 import { rateLimit } from '@/lib/prena/rate-limit';
+import { prenaErrorStatus } from '@/lib/prena/errors';
 
 const Body = z.object({
   arenaSlug: z.string().min(1).max(80),
@@ -14,21 +15,6 @@ const Body = z.object({
   walletAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
 });
 
-const STATUS: Record<string, number> = {
-  arena_full: 409,
-  arena_closed: 409,
-  already_entered: 409,
-  quote_expired: 410,
-  quote_consumed: 409,
-  prena_entry_disabled: 409,
-  registration_closed: 409,
-  registration_not_open: 409,
-  not_project_owner: 403,
-  forbidden: 403,
-  wallet_not_verified: 403,
-  treasury_not_configured: 503,
-  not_configured: 503,
-};
 
 export async function POST(request: Request) {
   const ctx = await getBuilder();
@@ -53,7 +39,7 @@ export async function POST(request: Request) {
     walletAddress: parsed.data.walletAddress,
   });
 
-  if (!result.ok) return NextResponse.json({ error: result.error }, { status: STATUS[result.error] ?? 400 });
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: prenaErrorStatus(result.error) });
 
   await trackEvent('prena_entry_selected', {
     builderId: ctx.builder.id,

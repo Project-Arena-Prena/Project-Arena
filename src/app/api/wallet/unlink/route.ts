@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { prenaErrorStatus } from '@/lib/prena/errors';
 import { z } from 'zod';
 import { getBuilder } from '@/lib/auth';
 import { trackEvent } from '@/lib/analytics';
@@ -6,12 +7,6 @@ import { unlinkWallet } from '@/services/wallet';
 
 const Body = z.object({ walletId: z.string().uuid() });
 
-const STATUS: Record<string, number> = {
-  forbidden: 403,
-  not_found: 404,
-  reward_pending: 409,
-  payment_pending: 409,
-};
 
 export async function POST(request: Request) {
   const ctx = await getBuilder();
@@ -21,7 +16,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
 
   const result = await unlinkWallet(ctx.builder.id, parsed.data.walletId);
-  if ('error' in result) return NextResponse.json({ error: result.error }, { status: STATUS[result.error] ?? 400 });
+  if ('error' in result) return NextResponse.json({ error: result.error }, { status: prenaErrorStatus(result.error) });
 
   await trackEvent('wallet_unlinked', { builderId: ctx.builder.id });
   return NextResponse.json({ ok: true });

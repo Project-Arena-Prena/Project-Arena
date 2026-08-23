@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { prenaServerConfig } from '@/lib/prena/config';
-import { applyDiscountCents, formatTokenAmount, toBaseUnits } from '@/lib/prena/amount';
+import { applyDiscountCents, formatTokenAmount, usdCentsToBaseUnits } from '@/lib/prena/amount';
 import { chainProvider } from './chain';
 
 /**
@@ -65,11 +65,7 @@ export async function getPrenaQuote(request: QuoteRequest): Promise<QuoteResult>
   if (!Number.isFinite(price.price) || price.price <= 0) return { ok: false, error: 'price_unavailable' };
 
   const decimals = prenaServerConfig.tokenDecimals;
-  const tokens = discountedUsdCents / 100 / price.price;
-  // Round up to whole-token precision the wallet can display cleanly, then to
-  // base units. Rounding up never under-charges the treasury.
-  const rounded = Math.ceil(tokens * 1e6) / 1e6;
-  const tokenAmount = toBaseUnits(rounded.toFixed(6), decimals).toString();
+  const tokenAmount = usdCentsToBaseUnits(discountedUsdCents, price.price, decimals).toString();
 
   const expiresAt = new Date(Date.now() + prenaServerConfig.quoteTtlSeconds * 1000).toISOString();
 
@@ -132,8 +128,7 @@ export async function estimatePrenaEntry(input: {
     const { price } = await chainProvider().getUsdPricePerToken();
     if (!Number.isFinite(price) || price <= 0) return null;
     const decimals = prenaServerConfig.tokenDecimals;
-    const rounded = Math.ceil((discountedUsdCents / 100 / price) * 1e6) / 1e6;
-    const tokenAmount = toBaseUnits(rounded.toFixed(6), decimals).toString();
+    const tokenAmount = usdCentsToBaseUnits(discountedUsdCents, price, decimals).toString();
     return { tokenAmount, formatted: formatTokenAmount(tokenAmount, decimals), discountedUsdCents };
   } catch {
     return null;

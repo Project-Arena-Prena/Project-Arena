@@ -32,16 +32,22 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const ctx = await requireBuilder('/dashboard');
-  const { projects, live, upcoming, entries } = await getBuilderDashboard(ctx.builder.id);
-  const next = upcoming.find((arena) => arena.status === 'registration') ?? upcoming[0] ?? null;
-
-  const [prenaSummary, prenaBenefits, wallets, rewards, activity] = await Promise.all([
-    getBuilderPrenaSummary(ctx.builder.id),
-    getBuilderPrenaBenefits(ctx.builder.id),
-    getBuilderWallets(ctx.builder.id),
-    listBuilderRewards(ctx.builder.id, ['claimable', 'approved', 'pending']),
-    getPrenaActivity(ctx.builder.id, { limit: 3 }),
+  // Nothing in the $PRENA batch depends on the dashboard read, so the two run
+  // together rather than as two serial stages on the main authed landing page.
+  const [
+    { projects, live, upcoming, entries },
+    [prenaSummary, prenaBenefits, wallets, rewards, activity],
+  ] = await Promise.all([
+    getBuilderDashboard(ctx.builder.id),
+    Promise.all([
+      getBuilderPrenaSummary(ctx.builder.id),
+      getBuilderPrenaBenefits(ctx.builder.id),
+      getBuilderWallets(ctx.builder.id),
+      listBuilderRewards(ctx.builder.id, ['claimable', 'approved', 'pending']),
+      getPrenaActivity(ctx.builder.id, { limit: 3 }),
+    ]),
   ]);
+  const next = upcoming.find((arena) => arena.status === 'registration') ?? upcoming[0] ?? null;
   const hasWallet = wallets.some((wallet) => wallet.verifiedAt);
   const showPrena = hasWallet || Number(prenaSummary.earned) > 0 || activity.length > 0;
 

@@ -70,10 +70,17 @@ export function tryParseBaseUnits(value: unknown): bigint | null {
   }
 }
 
-export function compareBase(a: bigint | string, b: bigint | string): number {
-  const left = typeof a === 'bigint' ? a : BigInt(a || '0');
-  const right = typeof b === 'bigint' ? b : BigInt(b || '0');
-  return left === right ? 0 : left > right ? 1 : -1;
+
+/**
+ * USD cents -> token base units at a given price. Rounds up at six decimals so
+ * the treasury is never undercharged. Shared deliberately: the public Arena
+ * page advertises a price with this and checkout charges with it, and the two
+ * drifting would be a trust bug exactly where the product asks for trust.
+ */
+export function usdCentsToBaseUnits(cents: number, usdPricePerToken: number, decimals: number): bigint {
+  const tokens = cents / 100 / usdPricePerToken;
+  const rounded = Math.ceil(tokens * 1e6) / 1e6;
+  return toBaseUnits(rounded.toFixed(6), decimals);
 }
 
 /** Applies a whole-percent discount to a USD cents amount, rounding half up. */

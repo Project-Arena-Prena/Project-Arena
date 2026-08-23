@@ -52,7 +52,7 @@ export default async function PrenaActivityPage({
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <WalletButton />
             {benefits.verifiedBuilderEligible ? <PrenaBenefitBadge benefit="verified" /> : null}
-            {benefits.earlyRegistrationEligible ? <PrenaBenefitBadge benefit="early_registration" /> : null}
+            {/* No early-registration badge: see canRegisterEarly — no gate honours it yet. */}
             {benefits.entryDiscountEligible ? <PrenaBenefitBadge benefit="entry_discount" /> : null}
           </div>
         </Container>

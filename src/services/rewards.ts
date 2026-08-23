@@ -75,21 +75,6 @@ export async function getArenaRewardPool(arenaId: string): Promise<ArenaRewardPo
   return data ? toPool(data as Record<string, unknown>) : null;
 }
 
-export async function getArenaRewardPools(arenaIds: string[]): Promise<Map<string, ArenaRewardPool>> {
-  const map = new Map<string, ArenaRewardPool>();
-  if (arenaIds.length === 0) return map;
-  const supabase = createAdminClient();
-  if (!supabase) return map;
-  const { data } = await supabase
-    .from('arena_reward_pools')
-    .select('*, arena_reward_tiers(*)')
-    .in('arena_id', arenaIds);
-  for (const row of (data ?? []) as Array<Record<string, unknown>>) {
-    const pool = toPool(row);
-    map.set(pool.arenaId, pool);
-  }
-  return map;
-}
 
 export async function upsertArenaRewardPool(input: {
   arenaId: string;
@@ -192,9 +177,6 @@ export async function setArenaRewardStatus(
   return Number(data ?? 0);
 }
 
-export async function getClaimableRewards(builderId: string): Promise<RewardAllocation[]> {
-  return listBuilderRewards(builderId, ['claimable']);
-}
 
 export async function listBuilderRewards(
   builderId: string,

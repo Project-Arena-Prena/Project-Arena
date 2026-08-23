@@ -1,8 +1,8 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { privateKeyToAccount } from 'viem/accounts';
 import { createAdminClient } from './supabase/server';
 import { prenaServerConfig } from './prena/config';
-import { fromBaseUnits, toBaseUnits } from './prena/amount';
+import { fromBaseUnits } from './prena/amount';
 import { getPrenaQuote } from '@/services/tokenQuote';
 import { createPrenaPaymentIntent, simulatePrenaPayment, verifyPrenaPayment } from '@/services/tokenPayment';
 import { calculateArenaRewards, setArenaRewardStatus, listArenaAllocations } from '@/services/rewards';
@@ -396,4 +396,3 @@ export async function runPrenaDryRun(): Promise<PrenaDryRunReport> {
   };
 }
 
-export { toBaseUnits };

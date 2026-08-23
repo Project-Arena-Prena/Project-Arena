@@ -67,19 +67,27 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
   const arena = await getArena(slug);
   if (!arena) notFound();
 
-  const [standings, liveArena, rewardPool] = await Promise.all([
+  // The estimate is only rendered on an open registration grid, so it is gated
+  // on the same condition here — this is the highest-traffic public route and a
+  // live or finished Arena must not pay for a price lookup it never shows.
+  const wantsEstimate =
+    arena.prenaPaymentEnabled &&
+    arena.entryFeeCents > 0 &&
+    arena.status === 'registration' &&
+    arena.entrantCount < arena.entrantCap;
+
+  const [standings, liveArena, rewardPool, prenaEstimate] = await Promise.all([
     getStandings(slug),
     getLiveArena(),
     arena.rewardPoolEnabled ? getArenaRewardPool(arena.id) : Promise.resolve(null),
-  ]);
-  // Display-only estimate. The spendable amount is always a server quote.
-  const prenaEstimate =
-    arena.prenaPaymentEnabled && arena.entryFeeCents > 0
-      ? await estimatePrenaEntry({
+    // Display-only estimate. The spendable amount is always a server quote.
+    wantsEstimate
+      ? estimatePrenaEntry({
           usdAmountCents: arena.entryFeeCents,
           discountPercent: arena.prenaDiscountPercent,
         })
-      : null;
+      : Promise.resolve(null),
+  ]);
   await trackEvent('arena_viewed', { arenaId: arena.id });
 
   const isLive = arena.status === 'live';
