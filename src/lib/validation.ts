@@ -5,10 +5,11 @@ export function publicHttpUrl(maxLength: number) {
     .string()
     .max(maxLength)
     .url()
-    .refine((value) => {
-      const protocol = new URL(value).protocol;
-      return protocol === 'http:' || protocol === 'https:';
-    }, 'Only HTTP(S) URLs are allowed');
+    // safeExternalUrl, not `new URL`: a failed .url() check marks the result
+    // dirty rather than aborted, so zod still runs this refinement on a string
+    // that is not a URL. `new URL('')` throws a TypeError, which is not a
+    // ZodError, so it escapes safeParse and 500s the route.
+    .refine((value) => safeExternalUrl(value) !== null, 'Only HTTP(S) URLs are allowed');
 }
 
 export function safeExternalUrl(value: string): URL | null {

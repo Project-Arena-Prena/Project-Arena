@@ -24,6 +24,12 @@ export async function GET(request: Request) {
     error = new Error('missing_auth_token');
   }
 
-  if (error) return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+  if (error) {
+    // The redirect can only carry a generic code, and a consumed link, an
+    // expired one and a PKCE cookie-origin mismatch are indistinguishable
+    // without this. Server-side only — never surfaced to the visitor.
+    console.error('[auth/callback]', error);
+    return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+  }
   return NextResponse.redirect(`${origin}${destination}`);
 }
