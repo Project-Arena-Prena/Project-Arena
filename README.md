@@ -69,10 +69,19 @@ Fresh projects run `supabase/schema.sql`. Existing Phase 1 databases run
 `schema.sql`. Existing Phase 2 databases run `supabase/migrations/004_phase3_prena.sql`,
 which is idempotent.
 
+**Every existing database must run `supabase/migrations/008_lock_service_role_rpcs.sql`.**
+It is the only thing that takes `anon` and `authenticated` off the service-role RPCs
+below. Supabase's default privileges on schema `public` grant EXECUTE on every new
+function to `anon` by name, so the per-function `revoke ... from public` in `schema.sql`
+never removed it — and the anon key ships to the browser. Before 008, anyone could call
+`approve_entry`, `confirm_paid_entry` or `finalize_arena_by_id` over the Data API. The
+migration sweeps all 48 functions, re-grants only the four the RLS policies need, and
+raises rather than reporting a false pass. It must stay last in `schema.sql`.
+
 Scoring is server-side only. `arena_entries.score` is a generated column
 (`supporters + unique_visits * 2`). Payments never touch that formula.
 
-Key RPCs (service role):
+Key RPCs (service role only — enforced by grants, not by an in-function guard):
 
 | Function | Called by |
 | --- | --- |
