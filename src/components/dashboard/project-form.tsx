@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Label } from '@/components/ui';
+import { ProjectLogo } from '@/components/project-logo';
 import { PROJECT_CATEGORIES, type Project, type ProjectCategory } from '@/lib/types';
 import { cn } from '@/lib/cn';
 
@@ -14,6 +15,9 @@ export function ProjectForm({ project }: { project?: Project }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState<ProjectCategory>(project?.category ?? 'Other');
+  const [projectName, setProjectName] = useState(project?.name ?? 'Project');
+  const [logoUrl, setLogoUrl] = useState(project?.logoUrl ?? '');
+  const [logoPending, setLogoPending] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,7 +31,7 @@ export function ProjectForm({ project }: { project?: Project }) {
       description: String(form.get('description') ?? ''),
       websiteUrl: String(form.get('websiteUrl') ?? ''),
       category,
-      logoUrl: String(form.get('logoUrl') ?? ''),
+      logoUrl,
       xUrl: String(form.get('xUrl') ?? ''),
       githubUrl: String(form.get('githubUrl') ?? ''),
     };
@@ -50,7 +54,14 @@ export function ProjectForm({ project }: { project?: Project }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <Field label="Name">
-        <input name="name" required maxLength={60} defaultValue={project?.name} className={INPUT} />
+        <input
+          name="name"
+          required
+          maxLength={60}
+          defaultValue={project?.name}
+          onChange={(event) => setProjectName(event.target.value || 'Project')}
+          className={INPUT}
+        />
       </Field>
       <Field label="Slug" hint="Unique URL">
         <input name="slug" defaultValue={project?.slug} className={cn(INPUT, 'font-mono text-[13px]')} />
@@ -88,9 +99,13 @@ export function ProjectForm({ project }: { project?: Project }) {
           ))}
         </div>
       </div>
-      <Field label="Logo URL">
-        <input name="logoUrl" type="url" defaultValue={project?.logoUrl ?? ''} className={cn(INPUT, 'font-mono text-[13px]')} />
-      </Field>
+      <LogoUpload
+        projectName={projectName}
+        value={logoUrl}
+        onChange={setLogoUrl}
+        pending={logoPending}
+        setPending={setLogoPending}
+      />
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="X URL">
           <input name="xUrl" type="url" defaultValue={project?.xUrl ?? ''} className={cn(INPUT, 'font-mono text-[13px]')} />
@@ -100,10 +115,127 @@ export function ProjectForm({ project }: { project?: Project }) {
         </Field>
       </div>
       {error ? <p className="font-mono text-[10px] uppercase tracking-widest text-arena">{error}</p> : null}
-      <Button type="submit" size="lg" disabled={pending} className="w-full sm:w-auto">
-        {pending ? 'Saving' : project ? 'Save Project' : 'Create Project'}
+      <Button type="submit" size="lg" disabled={pending || logoPending} className="w-full sm:w-auto">
+        {logoPending ? 'Uploading logo' : pending ? 'Saving' : project ? 'Save Project' : 'Create Project'}
       </Button>
     </form>
+  );
+}
+
+function LogoUpload({
+  projectName,
+  value,
+  onChange,
+  pending,
+  setPending,
+}: {
+  projectName: string;
+  value: string;
+  onChange: (value: string) => void;
+  pending: boolean;
+  setPending: (value: boolean) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function upload(file: File) {
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Logo must be 2 MB or smaller');
+      return;
+    }
+    if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
+      setError('Use PNG, JPG, WebP, or GIF');
+      return;
+    }
+
+    const localPreview = URL.createObjectURL(file);
+    setPreview(localPreview);
+    setPending(true);
+    setError(null);
+
+    try {
+      const body = new FormData();
+      body.set('logo', file);
+      const response = await fetch('/api/projects/logo', { method: 'POST', body });
+      const payload = (await response.json().catch(() => null)) as { url?: string; error?: string } | null;
+
+      if (response.ok && payload?.url) {
+        onChange(payload.url);
+      } else if (payload?.error === 'invalid_file') {
+        setError('Logo must be 2 MB or smaller');
+      } else if (payload?.error === 'unsupported_image') {
+        setError('Use PNG, JPG, WebP, or GIF');
+      } else if (payload?.error === 'rate_limited') {
+        setError('Too many uploads. Wait a minute and try again');
+      } else {
+        setError('Could not upload logo');
+      }
+    } catch {
+      setError('Could not upload logo');
+    } finally {
+      setPreview(null);
+      URL.revokeObjectURL(localPreview);
+      setPending(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  }
+
+  const imageUrl = preview ?? value;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between">
+        <Label>Project logo</Label>
+        <span className="num text-[10px] text-bone-faint">PNG, JPG, WebP, GIF · 2 MB</span>
+      </div>
+      <div
+        onDragEnter={(event) => {
+          event.preventDefault();
+          if (!pending) setDragging(true);
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          const file = event.dataTransfer.files[0];
+          if (file && !pending) void upload(file);
+        }}
+        className={cn(
+          'flex min-h-32 items-center gap-5 border border-dashed p-5 transition-colors',
+          dragging ? 'border-arena bg-arena/5' : 'border-white/15 bg-ink-900/40',
+        )}
+      >
+        <ProjectLogo name={projectName} logoUrl={imageUrl || null} size="lg" />
+        <div className="flex flex-1 flex-col items-start gap-2">
+          <p className="text-sm text-bone-dim">Drop your logo here or choose a file.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => inputRef.current?.click()}>
+              {pending ? 'Uploading' : value ? 'Replace logo' : 'Choose logo'}
+            </Button>
+            {value ? (
+              <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => onChange('')}>
+                Remove
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="sr-only"
+          disabled={pending}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void upload(file);
+          }}
+        />
+      </div>
+      {error ? <p className="font-mono text-[10px] uppercase tracking-widest text-arena">{error}</p> : null}
+    </div>
   );
 }
 

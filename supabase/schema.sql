@@ -115,6 +115,27 @@ create index if not exists project_owners_project_idx on public.project_owners (
 create index if not exists builders_user_idx on public.builders (user_id);
 create index if not exists builders_email_idx on public.builders (email);
 
+-- Project logos are public assets, but uploads only use the authenticated
+-- server route. No client write policies are granted on storage.objects.
+insert into storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+values (
+  'project-logos',
+  'project-logos',
+  true,
+  2097152,
+  array['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
 -- ---------------------------------------------------------------------------
 -- Arenas
 -- ---------------------------------------------------------------------------
