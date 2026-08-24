@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { LiveDot } from '@/components/ui';
+import { ProjectLogo } from '@/components/project-logo';
 import { cn } from '@/lib/cn';
 import { formatNumber, formatRank } from '@/lib/format';
 import type { Project } from '@/lib/types';
@@ -14,35 +15,41 @@ export function ProjectRow({ project, liveRank }: { project: Project; liveRank: 
   ];
 
   return (
-    <div className="group relative flex flex-col gap-5 border-b hairline px-5 py-5 transition-colors duration-200 last:border-b-0 hover:bg-white/[0.025] lg:flex-row lg:items-center lg:justify-between lg:gap-10">
-      <div className="flex min-w-0 flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            href={`/project/${project.slug}`}
-            className="text-lg font-medium tracking-tight text-bone transition-colors duration-200 after:absolute after:inset-0 after:content-[''] hover:text-arena"
-          >
-            {project.name}
-          </Link>
-          <span className="border hairline px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-bone-faint">
+    <article className="group border-b hairline px-4 py-5 transition-colors duration-300 last:border-b-0 hover:bg-white/[0.025] sm:px-5">
+      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+        <ProjectLogo name={project.name} logoUrl={project.logoUrl} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/dashboard/projects/${project.id}`}
+              className="truncate text-base font-medium tracking-tight text-bone transition-colors duration-200 hover:text-arena sm:text-lg"
+            >
+              {project.name}
+            </Link>
+            {liveRank !== null ? (
+              <span className="inline-flex shrink-0 items-center gap-1.5 border border-live/25 bg-live/[0.06] px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-live sm:text-[10px]">
+                <LiveDot />
+                #{formatRank(liveRank)} live
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 truncate text-xs text-bone-faint sm:text-sm">{project.tagline}</p>
+          <span className="mt-2 inline-block border hairline px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-bone-faint">
             {project.category}
           </span>
-          {liveRank !== null ? (
-            <span className="inline-flex items-center gap-1.5 border border-live/25 bg-live/[0.06] px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-live">
-              <LiveDot />
-              P{formatRank(liveRank)}
-            </span>
-          ) : null}
         </div>
-        <p className="max-w-[56ch] truncate text-sm text-bone-dim">{project.tagline}</p>
       </div>
 
-      <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:gap-10">
-        <div className="grid grid-cols-4 gap-5 lg:grid-cols-[104px_96px_60px_104px] lg:gap-6">
+      <div className="mt-5 border-t hairline pt-4 sm:ml-16">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="flex flex-col gap-1.5 lg:items-end">
+            <div key={stat.label} className="flex min-w-0 flex-col gap-1.5">
               <span className="label">{stat.label}</span>
               <span
-                className={cn('num text-base leading-none', stat.gold ? 'text-gold' : 'text-bone')}
+                className={cn(
+                  'num truncate text-base leading-none',
+                  stat.gold ? 'text-gold' : 'text-bone',
+                )}
               >
                 {stat.value}
               </span>
@@ -50,14 +57,22 @@ export function ProjectRow({ project, liveRank }: { project: Project; liveRank: 
           ))}
         </div>
 
-        <Link
-          href="/enter"
-          className="relative z-10 inline-flex w-fit items-center gap-1.5 border hairline px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-widest text-bone-faint transition-colors duration-200 hover:border-white/25 hover:text-bone"
-        >
-          Enter Next Arena
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </Link>
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 border-t hairline pt-4">
+          <Link
+            href={`/dashboard/projects/${project.id}`}
+            className="font-mono text-[10px] uppercase tracking-widest text-arena transition-colors duration-200 hover:text-bone"
+          >
+            Manage Project
+          </Link>
+          <Link
+            href={`/project/${project.slug}`}
+            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-bone-faint transition-colors duration-200 hover:text-bone"
+          >
+            Public profile
+            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }

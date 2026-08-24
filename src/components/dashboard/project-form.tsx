@@ -186,7 +186,7 @@ function LogoUpload({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-baseline justify-between">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
         <Label>Project logo</Label>
         <span className="num text-[10px] text-bone-faint">PNG, JPG, WebP, GIF · 2 MB</span>
       </div>
@@ -204,7 +204,7 @@ function LogoUpload({
           if (file && !pending) void upload(file);
         }}
         className={cn(
-          'flex min-h-32 items-center gap-5 border border-dashed p-5 transition-colors',
+          'flex min-h-32 flex-col items-start gap-5 border border-dashed p-5 transition-colors sm:flex-row sm:items-center',
           dragging ? 'border-arena bg-arena/5' : 'border-white/15 bg-ink-900/40',
         )}
       >
