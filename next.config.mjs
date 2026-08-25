@@ -13,8 +13,12 @@ if (process.env.NODE_ENV !== 'production') pageExtensions.unshift('dev.tsx');
 const isProductionDeployment = process.env.VERCEL_ENV === 'production';
 if (isProductionDeployment) {
   const groups = [
-    ['NEXT_PUBLIC_SUPABASE_URL'],
-    ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'],
+    ['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_URL'],
+    [
+      'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+      'SUPABASE_PUBLISHABLE_KEY',
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    ],
     ['SUPABASE_SECRET_KEY', 'SUPABASE_SERVICE_ROLE_KEY'],
     ['STRIPE_SECRET_KEY'],
     ['STRIPE_WEBHOOK_SECRET'],
