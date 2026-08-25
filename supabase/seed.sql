@@ -1,4 +1,4 @@
--- Project Arena — deterministic Phase 1 seed. Safe to re-run.
+-- Project Arena — deterministic Phase 2 seed. Safe to re-run.
 
 insert into public.projects (
   name, slug, tagline, description, website_url, x_url, github_url, category,
@@ -35,7 +35,7 @@ insert into public.arenas (
 ) values
   ('Launch Arena #000', 'launch-arena-000', 0, 'The first Arena. Everything was allowed.', 'Open', now() - interval '24 days', now() - interval '22 days', 'finished', now() - interval '31 days', now() - interval '24 days', 32, 1900, 12904, 'Any internet project with a public URL.'),
   ('Open Arena #001', 'open-arena-001', 1, 'Open category. Any internet project. No rules beyond the clock.', 'Open', now() - interval '40 hours', now() + interval '8 hours', 'live', now() - interval '10 days', now() - interval '40 hours', 32, 1900, 18421, 'Any internet project with a public URL.'),
-  ('Open Arena #002', 'open-arena-002', 2, 'Any internet project. Thirty-two spots. The next open field.', 'Open', now() + interval '8 days', now() + interval '10 days', 'registration', now() - interval '2 days', now() + interval '8 days', 32, 2900, 0, 'Any internet project with a public URL.')
+  ('Open Arena #002', 'open-arena-002', 2, 'Any internet project. Thirty-two spots. The next open field.', 'Open', now() + interval '8 days', now() + interval '10 days', 'registration', now() - interval '2 days', now() + interval '8 days', 32, 1900, 0, 'Any internet project with a public URL.')
 on conflict (slug) do update set
   starts_at = excluded.starts_at,
   ends_at = excluded.ends_at,
@@ -47,6 +47,22 @@ on conflict (slug) do update set
   entry_price = excluded.entry_price,
   spectators = excluded.spectators,
   eligibility_text = excluded.eligibility_text;
+
+with seeded(slug, supporters, visits) as (values
+  ('drift', 3842, 2180), ('kernelpad', 3721, 2054), ('nightmarket', 3498, 1911),
+  ('plumb', 3220, 1782), ('glyphset', 3014, 1640), ('tallyhouse', 2841, 1512),
+  ('moth', 2698, 1405), ('stagelight', 2510, 1311), ('signalcast', 2328, 1217),
+  ('lathe', 2140, 1122), ('orbitfeed', 1998, 1035), ('paperclip', 1871, 954),
+  ('foundry-ui', 1734, 876), ('ferrite', 1602, 798), ('sunkcity', 1498, 722),
+  ('atlasnote', 1364, 655)
+)
+update public.arena_entries ae
+set status = 'competing', supporter_count = seeded.supporters,
+    unique_visit_count = seeded.visits
+from seeded
+join public.projects p on p.slug = seeded.slug
+join public.arenas a on a.slug = 'open-arena-001'
+where ae.arena_id = a.id and ae.project_id = p.id;
 
 insert into public.arena_entries (arena_id, project_id, status, supporter_count, unique_visit_count)
 select a.id, p.id, 'competing', seeded.supporters, seeded.visits
@@ -61,9 +77,23 @@ from (values
 join public.projects p on p.slug = seeded.slug
 cross join public.arenas a
 where a.slug = 'open-arena-001'
-on conflict (arena_id, project_id) do update set
-  status = 'competing', supporter_count = excluded.supporter_count,
-  unique_visit_count = excluded.unique_visit_count;
+  and not exists (
+    select 1 from public.arena_entries ae
+    where ae.arena_id = a.id and ae.project_id = p.id
+  );
+
+with seeded(slug, supporters, visits, final_rank) as (values
+  ('kernelpad', 2913, 1410, 1), ('drift', 2817, 1350, 2), ('plumb', 2604, 1240, 3),
+  ('tallyhouse', 2388, 1120, 4), ('nightmarket', 2201, 1015, 5), ('glyphset', 2044, 940, 6),
+  ('stagelight', 1877, 862, 7), ('moth', 1711, 790, 8)
+)
+update public.arena_entries ae
+set status = 'finished', supporter_count = seeded.supporters,
+    unique_visit_count = seeded.visits, final_rank = seeded.final_rank
+from seeded
+join public.projects p on p.slug = seeded.slug
+join public.arenas a on a.slug = 'launch-arena-000'
+where ae.arena_id = a.id and ae.project_id = p.id;
 
 insert into public.arena_entries (arena_id, project_id, status, supporter_count, unique_visit_count, final_rank)
 select a.id, p.id, 'finished', seeded.supporters, seeded.visits, seeded.final_rank
@@ -75,74 +105,26 @@ from (values
 join public.projects p on p.slug = seeded.slug
 cross join public.arenas a
 where a.slug = 'launch-arena-000'
-on conflict (arena_id, project_id) do update set
-  status = 'finished', supporter_count = excluded.supporter_count,
-  unique_visit_count = excluded.unique_visit_count, final_rank = excluded.final_rank;
+  and not exists (
+    select 1 from public.arena_entries ae
+    where ae.arena_id = a.id and ae.project_id = p.id
+  );
 
 insert into public.arena_entries (arena_id, project_id, status)
 select a.id, p.id, 'approved'
 from public.projects p cross join public.arenas a
 where a.slug = 'open-arena-002'
-on conflict (arena_id, project_id) do nothing;
-
--- ---------------------------------------------------------------------------
--- Phase 3 — $PRENA. Enables the token entry path and a reward pool on the
--- example Arenas so the flow is visible in a fresh environment.
--- Run supabase/migrations/004_phase3_prena.sql (or the full schema) first.
--- ---------------------------------------------------------------------------
-
-update public.arenas
-  set prena_payment_enabled = true,
-      prena_discount_percent = 17
-  where slug in ('open-arena-001', 'open-arena-002');
+  and p.slug in (
+    'drift', 'kernelpad', 'nightmarket', 'plumb', 'glyphset', 'tallyhouse', 'moth', 'stagelight',
+    'signalcast', 'lathe', 'orbitfeed', 'paperclip', 'foundry-ui', 'ferrite', 'sunkcity', 'atlasnote'
+  )
+  and not exists (
+    select 1 from public.arena_entries ae
+    where ae.arena_id = a.id and ae.project_id = p.id
+  );
 
 update public.arenas
-  set reward_pool_enabled = true
-  where slug in ('open-arena-002', 'launch-arena-000');
-
-insert into public.arena_reward_pools (arena_id, token_symbol, total_amount, status)
-select a.id, 'PRENA', 50000, 'announced'
-from public.arenas a
-where a.slug = 'open-arena-002'
-on conflict (arena_id) do update set
-  total_amount = excluded.total_amount,
-  status = excluded.status;
-
-insert into public.arena_reward_pools (arena_id, token_symbol, total_amount, status)
-select a.id, 'PRENA', 20000, 'announced'
-from public.arenas a
-where a.slug = 'launch-arena-000'
-on conflict (arena_id) do update set
-  total_amount = excluded.total_amount,
-  status = excluded.status;
-
--- 20,000 + 10,000 + 6,000 + 8,000 + 6,000 = 50,000.
-delete from public.arena_reward_tiers t
-using public.arena_reward_pools p, public.arenas a
-where t.reward_pool_id = p.id and p.arena_id = a.id and a.slug in ('open-arena-002', 'launch-arena-000');
-
-insert into public.arena_reward_tiers
-  (reward_pool_id, reward_type, label, rank_start, rank_end, amount, distribution, position)
-select p.id, v.reward_type, v.label, v.rank_start, v.rank_end, v.amount, v.distribution, v.position
-from public.arena_reward_pools p
-join public.arenas a on a.id = p.arena_id
-cross join (values
-  ('champion', 'Champion', 1, 1, 20000, 'each', 0),
-  ('rank', '#2', 2, 2, 10000, 'each', 1),
-  ('rank', '#3', 3, 3, 6000, 'each', 2),
-  ('rank', 'Top 10', 4, 10, 8000, 'split', 3),
-  ('community', 'Community rewards', null, null, 6000, 'split', 4)
-) as v(reward_type, label, rank_start, rank_end, amount, distribution, position)
-where a.slug = 'open-arena-002';
-
-insert into public.arena_reward_tiers
-  (reward_pool_id, reward_type, label, rank_start, rank_end, amount, distribution, position)
-select p.id, v.reward_type, v.label, v.rank_start, v.rank_end, v.amount, v.distribution, v.position
-from public.arena_reward_pools p
-join public.arenas a on a.id = p.arena_id
-cross join (values
-  ('champion', 'Champion', 1, 1, 10000, 'each', 0),
-  ('rank', '#2', 2, 2, 5000, 'each', 1),
-  ('rank', 'Top 8', 3, 8, 5000, 'split', 2)
-) as v(reward_type, label, rank_start, rank_end, amount, distribution, position)
-where a.slug = 'launch-arena-000';
+  set prena_payment_enabled = false,
+      prena_discount_percent = 0,
+      reward_pool_enabled = false
+  where slug in ('launch-arena-000', 'open-arena-001', 'open-arena-002');
