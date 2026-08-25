@@ -1,5 +1,5 @@
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const anonKey =\n  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??\n  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const secretKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // A NEXT_PUBLIC_ var that Vercel cannot resolve at build time is inlined as a
