@@ -4,9 +4,6 @@ import { LiveEntryCard } from '@/components/dashboard/live-entry-card';
 import { NextArenaCard } from '@/components/dashboard/next-arena-card';
 import { ProjectRow } from '@/components/dashboard/project-row';
 import { SummaryBar } from '@/components/dashboard/summary-bar';
-import { PrenaActivityList } from '@/components/prena/prena-activity-list';
-import { PrenaDashboardPanel } from '@/components/prena/prena-dashboard-panel';
-import { RewardsPanel } from '@/components/prena/rewards-panel';
 import { Reveal } from '@/components/reveal';
 import {
   ButtonLink,
@@ -19,10 +16,6 @@ import {
 } from '@/components/ui';
 import { requireBuilder } from '@/lib/auth';
 import { getBuilderDashboard } from '@/lib/builder-queries';
-import { getPrenaActivity } from '@/services/activity';
-import { getBuilderPrenaBenefits } from '@/services/benefits';
-import { getBuilderPrenaSummary, listBuilderRewards } from '@/services/rewards';
-import { getBuilderWallets } from '@/services/wallet';
 
 export const metadata: Metadata = {
   title: 'Builder Dashboard',
@@ -37,24 +30,10 @@ const ONBOARDING_STEPS = [
 
 export default async function DashboardPage() {
   const ctx = await requireBuilder('/dashboard');
-  const [
-    { projects, live, upcoming, entries },
-    [prenaSummary, prenaBenefits, wallets, rewards, activity],
-  ] = await Promise.all([
-    getBuilderDashboard(ctx.builder.id),
-    Promise.all([
-      getBuilderPrenaSummary(ctx.builder.id),
-      getBuilderPrenaBenefits(ctx.builder.id),
-      getBuilderWallets(ctx.builder.id),
-      listBuilderRewards(ctx.builder.id, ['claimable', 'approved', 'pending']),
-      getPrenaActivity(ctx.builder.id, { limit: 3 }),
-    ]),
-  ]);
+  const { projects, live, upcoming, entries } = await getBuilderDashboard(ctx.builder.id);
 
   const next = upcoming.find((arena) => arena.status === 'registration') ?? upcoming[0] ?? null;
   const pendingReviews = entries.filter((item) => item.entry.status === 'pending_review');
-  const hasWallet = wallets.some((wallet) => wallet.verifiedAt);
-  const showPrena = hasWallet || Number(prenaSummary.earned) > 0 || activity.length > 0;
   const canEnter = projects.length > 0 && next?.status === 'registration';
   const liveRanks = new Map(live.map((item) => [item.project.id, item.standing.rank]));
 
@@ -154,7 +133,7 @@ export default async function DashboardPage() {
         </Container>
       ) : (
         <>
-          <Container className="pt-8 sm:pt-10">
+          <Container className="pb-16 pt-8 sm:pb-20 sm:pt-10">
             <Reveal delay={0.04}>
               <SummaryBar projects={projects} liveCount={live.length} />
             </Reveal>
@@ -277,31 +256,6 @@ export default async function DashboardPage() {
             </div>
           </Container>
 
-          {rewards.length > 0 ? (
-            <Container className="pt-14">
-              <Reveal>
-                <SectionHeader eyebrow="Earned" title="Rewards" />
-                <RewardsPanel rewards={rewards} />
-              </Reveal>
-            </Container>
-          ) : null}
-
-          <Container className="pb-16 pt-14 sm:pb-20">
-            <Reveal>
-              <SectionHeader eyebrow="Optional" title="$PRENA" />
-              <PrenaDashboardPanel
-                summary={prenaSummary}
-                benefits={prenaBenefits}
-                hasWallet={hasWallet}
-              />
-            </Reveal>
-            {showPrena && activity.length > 0 ? (
-              <Reveal delay={0.08} className="mt-10">
-                <SectionHeader eyebrow="Latest" title="Recent $PRENA activity" />
-                <PrenaActivityList items={activity} />
-              </Reveal>
-            ) : null}
-          </Container>
         </>
       )}
     </>

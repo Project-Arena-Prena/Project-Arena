@@ -4,6 +4,20 @@ import { NextResponse, type NextRequest } from 'next/server';
 type CookiesToSet = { name: string; value: string; options: CookieOptions }[];
 
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const phaseTwoBlocked = [
+    '/dashboard/prena',
+    '/admin/prena',
+    '/api/prena',
+    '/api/wallet',
+    '/api/rewards',
+    '/dev-wallet-harness',
+  ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+
+  if (phaseTwoBlocked) {
+    return new NextResponse('Not Found', { status: 404 });
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -28,7 +42,6 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const isAuthenticated = Boolean(data?.claims?.sub);
 
-  const path = request.nextUrl.pathname;
   if (path.startsWith('/dashboard') && !isAuthenticated) {
     const login = request.nextUrl.clone();
     login.pathname = '/login';

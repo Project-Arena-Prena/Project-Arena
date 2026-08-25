@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { Countdown } from '@/components/countdown';
 import { Button, ButtonLink, EmptyState, Label, Panel, StatusBadge } from '@/components/ui';
-import { PrenaEntryOption } from '@/components/prena/prena-entry-option';
 import { cn } from '@/lib/cn';
 import { formatDate, formatMoney, formatNumber } from '@/lib/format';
 import type { Arena, Project } from '@/lib/types';
@@ -206,16 +205,6 @@ export function EntryFlow({
                 </Button>
               </div>
 
-              {selected.prenaPaymentEnabled && selected.entryFeeCents > 0 ? (
-                <>
-                  <div className="my-4 flex items-center gap-3">
-                    <span className="h-px flex-1 bg-white/[0.08]" />
-                    <span className="label">or</span>
-                    <span className="h-px flex-1 bg-white/[0.08]" />
-                  </div>
-                  <PrenaEntryOption arena={selected} projectId={projectId || null} disabled={full} />
-                </>
-              ) : null}
             </div>
             <div className="flex justify-between border-t hairline px-4 py-3">
               <Label>Spots filled</Label>

@@ -10,7 +10,6 @@ const LINKS = [
   { href: '/admin/entries', label: 'Entries' },
   { href: '/admin/projects', label: 'Projects' },
   { href: '/admin/payments', label: 'Payments' },
-  { href: '/admin/prena', label: '$PRENA' },
   { href: '/admin/fraud', label: 'Fraud' },
   { href: '/admin/analytics', label: 'Analytics' },
   { href: '/admin/dry-run', label: 'Dry-run' },
