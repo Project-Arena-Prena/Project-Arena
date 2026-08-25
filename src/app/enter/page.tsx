@@ -34,32 +34,41 @@ export default async function EnterPage({
 
   return (
     <div className="pb-20">
-      <section className="border-b hairline">
-        <Container className="flex flex-col gap-5 py-10 sm:py-14">
-          <Label>Enter</Label>
-          <h1 className="max-w-3xl text-[34px] font-semibold leading-[0.95] tracking-headline sm:text-5xl">
+      <Container className="grid gap-12 py-12 lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-20 lg:py-20">
+        <aside className="lg:sticky lg:top-28 lg:self-start">
+          <Label className="text-arena">Builder entry</Label>
+          <h1 className="mt-5 text-[clamp(3.5rem,7vw,5.8rem)] font-semibold uppercase leading-[0.82] tracking-[-0.075em]">
             Enter the Arena
           </h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-bone-dim sm:text-base">
-            Money buys a slot and a chance to be seen. It does not buy rank, votes, or Champion.
+          <p className="mt-7 max-w-sm text-sm leading-relaxed text-bone-dim sm:text-base">
+            Put your Project in front of people looking for something worth discovering.
           </p>
+          <div className="mt-8 border-y border-white/30 py-5">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-bone-faint">
+              Entry buys a place on the grid
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-bone-dim">
+              Payment never buys rank, support, or Champion status. Results are earned live.
+            </p>
+          </div>
           {canceled ? (
-            <div className="flex items-center gap-2.5 border border-arena/30 bg-arena/[0.06] px-3 py-2.5">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0 text-arena" />
-              <p className="font-mono text-[10px] uppercase tracking-widest text-bone-dim">
+            <div className="mt-5 flex items-start gap-2.5 border border-arena/40 bg-arena/[0.06] px-3 py-3">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-arena" />
+              <p className="font-mono text-[9px] uppercase leading-relaxed tracking-[0.12em] text-bone-dim">
                 Payment not completed. Your Arena spot has not been confirmed.
               </p>
             </div>
           ) : null}
-        </Container>
-      </section>
-      <Container className="py-10">
-        <EntryFlow
-          arenas={selectable}
-          projects={owned.map((item) => item.project)}
-          initialArenaSlug={arena}
-          initialProjectId={project}
-        />
+        </aside>
+
+        <div className="min-w-0">
+          <EntryFlow
+            arenas={selectable}
+            projects={owned.map((item) => item.project)}
+            initialArenaSlug={arena}
+            initialProjectId={project}
+          />
+        </div>
       </Container>
     </div>
   );

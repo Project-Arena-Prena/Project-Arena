@@ -14,11 +14,13 @@ export const metadata: Metadata = {
     title: 'Project Arena',
     description: 'Where projects compete for attention.',
     type: 'website',
+    images: ['/og.png'],
   },
+  icons: { icon: '/favicon.svg' },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#07080A',
+  themeColor: '#000000',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

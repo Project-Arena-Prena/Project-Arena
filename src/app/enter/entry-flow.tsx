@@ -86,7 +86,7 @@ export function EntryFlow({
       <div className="flex flex-col gap-10">
         <section className="flex flex-col gap-4">
           <Label>Select Project</Label>
-          <div className="border hairline">
+          <div className="border border-white/30 bg-ink-900">
             {projects.map((item) => {
               const active = item.id === projectId;
               return (
@@ -95,8 +95,8 @@ export function EntryFlow({
                   type="button"
                   onClick={() => setProjectId(item.id)}
                   className={cn(
-                    'flex w-full items-center justify-between px-4 py-3.5 text-left',
-                    active ? 'bg-arena/[0.06]' : 'hover:bg-white/[0.03]',
+                    'flex w-full items-center justify-between border-b hairline px-4 py-4 text-left last:border-b-0',
+                    active ? 'bg-[#110602]' : 'hover:bg-white/[0.03]',
                   )}
                 >
                   <span>
@@ -119,7 +119,7 @@ export function EntryFlow({
 
         <section className="flex flex-col gap-4">
           <Label>Arena</Label>
-          <div className="border hairline">
+          <div className="border border-white/30 bg-ink-900">
             {arenas.map((arena) => {
               const active = arena.slug === arenaSlug;
               const atCap = arena.entrantCount >= arena.entrantCap;
@@ -130,8 +130,8 @@ export function EntryFlow({
                   disabled={atCap}
                   onClick={() => setArenaSlug(arena.slug)}
                   className={cn(
-                    'flex w-full flex-col gap-1 px-4 py-3.5 text-left sm:flex-row sm:items-center sm:justify-between',
-                    active ? 'bg-arena/[0.06]' : 'hover:bg-white/[0.03]',
+                    'flex w-full flex-col gap-1 border-b hairline px-4 py-4 text-left last:border-b-0 sm:flex-row sm:items-center sm:justify-between',
+                    active ? 'bg-[#110602]' : 'hover:bg-white/[0.03]',
                     atCap && 'opacity-40',
                   )}
                 >
@@ -157,13 +157,14 @@ export function EntryFlow({
 
       <div className="lg:sticky lg:top-24">
         {selected ? (
-          <Panel>
+          <Panel className="relative overflow-hidden border-white/30">
+            <span className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
             <div className="flex items-center justify-between border-b hairline px-4 py-3">
               <Label>Entry</Label>
               <StatusBadge status={selected.status} />
             </div>
             <div className="px-4 py-4">
-              <h2 className="text-xl font-semibold tracking-headline">{selected.name}</h2>
+              <h2 className="text-2xl font-semibold uppercase leading-none tracking-[-0.045em]">{selected.name}</h2>
               <p className="mt-2 text-xs text-bone-dim">{selected.theme}</p>
               {selected.eligibilityText ? (
                 <p className="mt-3 text-xs text-bone-faint">{selected.eligibilityText}</p>

@@ -31,14 +31,16 @@ export default async function HallOfFamePage() {
   return (
     <>
       {/* -------------------------------------------------------------- header */}
-      <section className="border-b hairline">
-        <Container className="py-16 sm:py-20 lg:py-24">
+      <section className="relative overflow-hidden border-b hairline bg-ink-900">
+        <div className="grid-lines pointer-events-none absolute inset-0 opacity-25 [mask-image:linear-gradient(to_right,black,transparent)]" aria-hidden />
+        <div className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
+        <Container className="relative py-16 sm:py-20 lg:py-24">
           <Reveal>
             <Label>Hall of Fame</Label>
           </Reveal>
 
           <Reveal delay={0.06}>
-            <h1 className="mt-6 text-5xl font-semibold tracking-headline sm:text-6xl lg:text-[76px] lg:leading-[0.98]">
+            <h1 className="mt-6 text-[clamp(4rem,10vw,7.5rem)] font-semibold uppercase leading-[0.82] tracking-[-0.075em]">
               Champions
             </h1>
           </Reveal>
@@ -95,7 +97,7 @@ export default async function HallOfFamePage() {
             Rating carries across every Arena a project enters. Wins move it most. Nothing resets.
           </p>
           {topRated.length > 0 ? (
-            <Panel>
+            <Panel className="border-white/30">
               <RatingTable projects={topRated} />
             </Panel>
           ) : (
@@ -107,7 +109,8 @@ export default async function HallOfFamePage() {
       {/* --------------------------------------------------------- closing cta */}
       <section className="py-16 sm:py-20">
         <Container>
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:gap-10">
+          <div className="relative flex flex-col gap-6 overflow-hidden border border-white/30 bg-ink-900 p-6 md:flex-row md:items-center md:justify-between md:gap-10 sm:p-8">
+            <span className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
             <div className="flex flex-col gap-3">
               <Label>Open</Label>
               <h2 className="max-w-2xl text-3xl font-semibold tracking-headline sm:text-4xl">

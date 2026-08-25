@@ -36,7 +36,8 @@ export default async function ArenasPage() {
 
   return (
     <>
-      <section className="relative overflow-hidden border-b hairline">
+      <section className="relative overflow-hidden border-b hairline bg-ink-900">
+        <div className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
         <div
           className="grid-lines pointer-events-none absolute inset-0 opacity-60 [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.8),transparent_85%)]"
           aria-hidden
@@ -46,7 +47,7 @@ export default async function ArenasPage() {
             <Label>Arenas</Label>
           </Reveal>
           <Reveal delay={0.06}>
-            <h1 className="mt-6 text-5xl font-semibold tracking-headline sm:text-6xl lg:text-[72px] lg:leading-[1.02]">
+            <h1 className="mt-6 text-[clamp(4rem,10vw,7.5rem)] font-semibold uppercase leading-[0.82] tracking-[-0.075em]">
               The schedule
             </h1>
           </Reveal>
@@ -56,7 +57,7 @@ export default async function ArenasPage() {
             </p>
           </Reveal>
           <Reveal delay={0.18}>
-            <div className="mt-12 grid grid-cols-3 border hairline">
+            <div className="mt-12 grid grid-cols-3 border border-white/30 bg-black/40">
               {jump.map((cell, i) => (
                 <Link
                   key={cell.href}
@@ -114,7 +115,7 @@ export default async function ArenasPage() {
             />
           ) : (
             <Reveal delay={0.06}>
-              <Panel>
+              <Panel className="border-white/30">
                 <UpcomingTableHeader />
                 {upcoming.map((arena) => (
                   <UpcomingArenaRow key={arena.slug} arena={arena} />
@@ -137,7 +138,7 @@ export default async function ArenasPage() {
             <EmptyState title="No results yet" hint="Finished Arenas are archived here." />
           ) : (
             <Reveal delay={0.06}>
-              <Panel>
+              <Panel className="border-white/30">
                 <CompletedTableHeader />
                 {past.map((arena) => (
                   <CompletedArenaRow key={arena.slug} arena={arena} />

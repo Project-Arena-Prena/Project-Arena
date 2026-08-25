@@ -2,44 +2,71 @@ import Link from 'next/link';
 import { ArenaMark } from './arena-mark';
 import { Container } from './ui';
 
-const LINKS = [
+const EXPLORE = [
   { href: '/arenas', label: 'Arenas' },
   { href: '/hall-of-fame', label: 'Hall of Fame' },
-  { href: '/enter', label: 'Enter' },
+  { href: '/arena/open-arena-001', label: 'Watch Live' },
+];
+
+const BUILDERS = [
+  { href: '/enter', label: 'Enter a Project' },
   { href: '/dashboard', label: 'Dashboard' },
+  { href: '/login', label: 'Sign In' },
 ];
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t hairline">
-      <Container className="flex flex-col gap-8 py-12 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex max-w-xs flex-col gap-3">
-          <div className="flex items-center gap-2.5">
-            <ArenaMark className="h-5 w-5 text-bone" />
-            <span className="font-mono text-[11px] uppercase tracking-widest">Project Arena</span>
+    <footer className="mt-24">
+      <Container>
+        <div className="flex flex-col gap-14 border-t hairline py-12 sm:flex-row sm:items-start sm:justify-between">
+          <div className="max-w-sm">
+            <Link href="/" className="inline-flex items-center gap-3">
+              <ArenaMark className="h-7 w-7" />
+              <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em]">
+                Project Arena
+              </span>
+            </Link>
+            <p className="mt-5 text-sm leading-relaxed text-bone-dim">
+              Where projects compete for attention.
+            </p>
           </div>
-          <p className="text-sm leading-relaxed text-bone-faint">
-            Where projects compete for attention. Discover. Compete. Get seen.
-          </p>
+
+          <div className="grid grid-cols-2 gap-16 sm:gap-24">
+            <FooterLinks title="Explore" links={EXPLORE} />
+            <FooterLinks title="Builders" links={BUILDERS} />
+          </div>
         </div>
 
-        <nav className="flex flex-col gap-3">
-          {LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="font-mono text-[11px] uppercase tracking-widest text-bone-faint transition-colors hover:text-bone"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
-      </Container>
-      <Container className="border-t hairline py-6">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-bone-faint">
-          © {new Date().getUTCFullYear()} Project Arena
-        </p>
+        <div className="flex min-h-16 flex-col justify-center gap-2 border-t hairline py-4 font-mono text-[8px] uppercase tracking-[0.16em] text-bone-faint sm:flex-row sm:items-center sm:justify-between">
+          <span>© {new Date().getUTCFullYear()} Project Arena</span>
+          <span>Discover. Compete. Get seen.</span>
+        </div>
       </Container>
     </footer>
+  );
+}
+
+function FooterLinks({
+  title,
+  links,
+}: {
+  title: string;
+  links: Array<{ href: string; label: string }>;
+}) {
+  return (
+    <nav className="flex flex-col gap-3">
+      <span className="mb-1 font-mono text-[9px] uppercase tracking-[0.16em] text-bone-faint">
+        {title}
+      </span>
+      {links.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className="text-xs text-bone-dim transition-colors hover:text-bone"
+        >
+          {link.label}
+        </Link>
+      ))}
+    </nav>
   );
 }

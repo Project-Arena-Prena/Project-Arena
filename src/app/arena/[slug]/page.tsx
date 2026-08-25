@@ -83,24 +83,26 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="pb-20">
-      <section className="border-b hairline">
-        <Container className="flex flex-col gap-10 py-10 lg:flex-row lg:items-end lg:justify-between lg:gap-16 lg:py-14">
+      <section className="relative overflow-hidden border-b hairline bg-ink-900">
+        <div className="grid-lines pointer-events-none absolute inset-0 opacity-30 [mask-image:linear-gradient(to_right,black,transparent_76%)]" aria-hidden />
+        <div className="absolute inset-y-0 left-0 w-1 bg-arena shadow-[0_0_24px_rgba(232,80,2,0.35)]" aria-hidden />
+        <Container className="relative flex flex-col gap-10 py-14 lg:flex-row lg:items-end lg:justify-between lg:gap-16 lg:py-20">
           <Reveal className="flex min-w-0 flex-col gap-4">
-            {arena.number > 0 ? <Label>Arena #{arena.number.toString().padStart(3, '0')}</Label> : null}
-            <h1 className="text-[34px] font-semibold leading-[0.95] tracking-headline sm:text-5xl lg:text-6xl">
+            <div className="flex items-center gap-3">
+              <StatusBadge status={arena.status} />
+              {arena.number > 0 ? <Label>Race control · Arena {arena.number.toString().padStart(3, '0')}</Label> : null}
+            </div>
+            <h1 className="max-w-4xl text-[clamp(3.7rem,9vw,7rem)] font-semibold uppercase leading-[0.82] tracking-[-0.075em]">
               {arena.name}
             </h1>
-            <p className="max-w-xl text-lg font-medium leading-relaxed text-bone sm:text-xl">
+            <p className="max-w-xl text-lg font-medium leading-relaxed text-bone sm:text-2xl">
               {arena.entrantCount} projects. 48 hours. One champion.
             </p>
             <p className="max-w-xl text-sm leading-relaxed text-bone-dim">{arena.theme}</p>
           </Reveal>
 
           <Reveal delay={0.06} className="flex shrink-0 flex-col gap-4 lg:items-end">
-            <div className="flex items-center gap-3">
-              <StatusBadge status={arena.status} />
-              <Label>{CLOCK_LABEL[arena.status]}</Label>
-            </div>
+            <Label>{CLOCK_LABEL[arena.status]}</Label>
             {isLive ? <Countdown target={arena.endsAt} size="lg" /> : null}
             {isUpcoming && !isCancelled ? <Countdown target={arena.startsAt} size="lg" showDays /> : null}
             {arena.status === 'finished' || isCancelled ? (
@@ -114,7 +116,9 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
 
       <section className="border-b hairline">
         <Container>
-          <TimingStrip arena={arena} supporters={supporterCount} />
+          <div className="border-x border-white/30">
+            <TimingStrip arena={arena} supporters={supporterCount} />
+          </div>
         </Container>
       </section>
 
@@ -132,7 +136,8 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
           </Reveal>
         ) : isUpcoming ? (
           <Reveal delay={0.1} className="flex flex-col gap-10">
-            <Panel className="flex flex-col gap-6 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
+            <Panel className="relative flex flex-col gap-6 overflow-hidden border-white/30 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
+              <span className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
               <div className="flex flex-col gap-2.5">
                 <Label>{isFull ? 'Arena full' : 'Slots Remaining'}</Label>
                 <div className="flex items-baseline gap-2.5">
@@ -185,38 +190,67 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
           <Reveal delay={0.1} className="flex flex-col gap-10">
             {champion ? <ChampionPanel standing={champion} /> : null}
 
-            <Panel>
-              <div className="flex items-center justify-between gap-4 border-b hairline px-4 py-3">
-                <div className="flex items-baseline gap-2.5">
-                  <Label>{isLive ? 'Live Standings' : 'Final Standings'}</Label>
-                  <span className="num text-[10px] tracking-widest text-bone-faint">
-                    {formatNumber(standings.length)} Projects
-                  </span>
+            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+              <Panel className="overflow-hidden border-white/30">
+                <div className="flex items-center justify-between gap-4 border-b hairline px-4 py-4">
+                  <div className="flex items-baseline gap-2.5">
+                    <Label>{isLive ? 'Live classification' : 'Final classification'}</Label>
+                    <span className="num text-[10px] tracking-widest text-bone-faint">
+                      {formatNumber(standings.length)} Projects
+                    </span>
+                  </div>
+                  {isLive ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <LiveDot />
+                      <Label className="text-arena">Updating</Label>
+                    </span>
+                  ) : null}
                 </div>
-                {isLive ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <LiveDot />
-                    <Label className="text-live/80">Updating</Label>
-                  </span>
-                ) : null}
-              </div>
 
-              {isLive ? (
-                <div className="border-b hairline px-4 py-2 font-mono text-[9px] uppercase tracking-widest text-bone-faint">
-                  Scoring · 1 support = 1 pt · 1 unique visit = 2 pts
-                </div>
-              ) : null}
+                {standings.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Leaderboard standings={standings} arenaSlug={arena.slug} live={isLive} />
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <EmptyState title="No standings" hint="This Arena has no recorded entries." />
+                  </div>
+                )}
+              </Panel>
 
-              {standings.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Leaderboard standings={standings} arenaSlug={arena.slug} live={isLive} />
-                </div>
-              ) : (
-                <div className="p-4">
-                  <EmptyState title="No standings" hint="This Arena has no recorded entries." />
-                </div>
-              )}
-            </Panel>
+              <aside className="grid gap-4 lg:sticky lg:top-24">
+                <Panel className="border-white/25">
+                  <div className="flex items-center justify-between border-b hairline px-4 py-4">
+                    <Label>Scoring system</Label>
+                    {isLive ? <LiveDot /> : null}
+                  </div>
+                  <p className="px-4 py-4 text-xs leading-relaxed text-bone-dim">
+                    Rankings are computed server-side from validated support and outbound visit events.
+                  </p>
+                  <div className="flex items-center justify-between border-t hairline px-4 py-3 text-xs text-bone-dim">
+                    <span>Unique support</span>
+                    <strong className="num text-arena">+1 PT</strong>
+                  </div>
+                  <div className="flex items-center justify-between border-t hairline px-4 py-3 text-xs text-bone-dim">
+                    <span>Unique visit</span>
+                    <strong className="num text-arena">+2 PTS</strong>
+                  </div>
+                </Panel>
+
+                <Panel className="border-white/25 p-4">
+                  <Label>Champion takes</Label>
+                  <p className="mt-3 text-sm font-medium leading-relaxed text-bone">{arena.prize}</p>
+                </Panel>
+
+                <Panel className="border-white/25 p-4">
+                  <Label>Field status</Label>
+                  <div className="mt-3 flex items-baseline justify-between">
+                    <span className="num text-3xl text-bone">{formatNumber(arena.entrantCount)}</span>
+                    <span className="num text-xs text-bone-faint">/ {arena.entrantCap} projects</span>
+                  </div>
+                </Panel>
+              </aside>
+            </div>
           </Reveal>
         )}
       </Container>
