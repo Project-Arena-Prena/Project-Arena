@@ -1,4 +1,4 @@
--- Project Arena — deterministic Phase 1 seed. Safe to re-run.
+-- Project Arena — deterministic Phase 2 seed. Safe to re-run.
 
 insert into public.projects (
   name, slug, tagline, description, website_url, x_url, github_url, category,
@@ -48,6 +48,22 @@ on conflict (slug) do update set
   spectators = excluded.spectators,
   eligibility_text = excluded.eligibility_text;
 
+with seeded(slug, supporters, visits) as (values
+  ('drift', 3842, 2180), ('kernelpad', 3721, 2054), ('nightmarket', 3498, 1911),
+  ('plumb', 3220, 1782), ('glyphset', 3014, 1640), ('tallyhouse', 2841, 1512),
+  ('moth', 2698, 1405), ('stagelight', 2510, 1311), ('signalcast', 2328, 1217),
+  ('lathe', 2140, 1122), ('orbitfeed', 1998, 1035), ('paperclip', 1871, 954),
+  ('foundry-ui', 1734, 876), ('ferrite', 1602, 798), ('sunkcity', 1498, 722),
+  ('atlasnote', 1364, 655)
+)
+update public.arena_entries ae
+set status = 'competing', supporter_count = seeded.supporters,
+    unique_visit_count = seeded.visits
+from seeded
+join public.projects p on p.slug = seeded.slug
+join public.arenas a on a.slug = 'open-arena-001'
+where ae.arena_id = a.id and ae.project_id = p.id;
+
 insert into public.arena_entries (arena_id, project_id, status, supporter_count, unique_visit_count)
 select a.id, p.id, 'competing', seeded.supporters, seeded.visits
 from (values
@@ -61,9 +77,23 @@ from (values
 join public.projects p on p.slug = seeded.slug
 cross join public.arenas a
 where a.slug = 'open-arena-001'
-on conflict (arena_id, project_id) do update set
-  status = 'competing', supporter_count = excluded.supporter_count,
-  unique_visit_count = excluded.unique_visit_count;
+  and not exists (
+    select 1 from public.arena_entries ae
+    where ae.arena_id = a.id and ae.project_id = p.id
+  );
+
+with seeded(slug, supporters, visits, final_rank) as (values
+  ('kernelpad', 2913, 1410, 1), ('drift', 2817, 1350, 2), ('plumb', 2604, 1240, 3),
+  ('tallyhouse', 2388, 1120, 4), ('nightmarket', 2201, 1015, 5), ('glyphset', 2044, 940, 6),
+  ('stagelight', 1877, 862, 7), ('moth', 1711, 790, 8)
+)
+update public.arena_entries ae
+set status = 'finished', supporter_count = seeded.supporters,
+    unique_visit_count = seeded.visits, final_rank = seeded.final_rank
+from seeded
+join public.projects p on p.slug = seeded.slug
+join public.arenas a on a.slug = 'launch-arena-000'
+where ae.arena_id = a.id and ae.project_id = p.id;
 
 insert into public.arena_entries (arena_id, project_id, status, supporter_count, unique_visit_count, final_rank)
 select a.id, p.id, 'finished', seeded.supporters, seeded.visits, seeded.final_rank
@@ -75,9 +105,10 @@ from (values
 join public.projects p on p.slug = seeded.slug
 cross join public.arenas a
 where a.slug = 'launch-arena-000'
-on conflict (arena_id, project_id) do update set
-  status = 'finished', supporter_count = excluded.supporter_count,
-  unique_visit_count = excluded.unique_visit_count, final_rank = excluded.final_rank;
+  and not exists (
+    select 1 from public.arena_entries ae
+    where ae.arena_id = a.id and ae.project_id = p.id
+  );
 
 insert into public.arena_entries (arena_id, project_id, status)
 select a.id, p.id, 'approved'
@@ -87,7 +118,10 @@ where a.slug = 'open-arena-002'
     'drift', 'kernelpad', 'nightmarket', 'plumb', 'glyphset', 'tallyhouse', 'moth', 'stagelight',
     'signalcast', 'lathe', 'orbitfeed', 'paperclip', 'foundry-ui', 'ferrite', 'sunkcity', 'atlasnote'
   )
-on conflict (arena_id, project_id) do nothing;
+  and not exists (
+    select 1 from public.arena_entries ae
+    where ae.arena_id = a.id and ae.project_id = p.id
+  );
 
 update public.arenas
   set prena_payment_enabled = false,
