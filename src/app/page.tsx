@@ -85,7 +85,7 @@ export default async function HomePage() {
     <>
       <section className="relative flex min-h-[calc(100svh-68px)] items-end overflow-hidden border-b hairline bg-black py-28 sm:min-h-[820px] sm:py-32">
         <Image
-          src="/arena-hero-v2.webp"
+          src="/assets/arena-hero"
           alt="A packed Project Arena stadium viewed from the upper stands"
           fill
           priority
