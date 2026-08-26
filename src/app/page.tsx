@@ -14,6 +14,8 @@ import {
 import { Countdown } from '@/components/countdown';
 import { Leaderboard } from '@/components/leaderboard';
 import { Reveal } from '@/components/reveal';
+import { RomanArtInterlude } from '@/components/home/roman-art-interlude';
+import { RomanHeroBackdrop } from '@/components/home/roman-hero-backdrop';
 import {
   ButtonLink,
   Container,
@@ -82,21 +84,14 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="relative flex min-h-[calc(100svh-68px)] items-end overflow-hidden border-b hairline bg-black py-28 sm:min-h-[820px] sm:py-32">
-        <Image
-          src="/assets/arena-hero"
-          alt="A packed Project Arena stadium viewed from the upper stands"
-          fill
-          priority
-          unoptimized
-          sizes="100vw"
-          className="object-cover object-[56%_center] saturate-[0.78] contrast-[1.08] brightness-[0.64] sm:object-center sm:saturate-[0.82] sm:brightness-[0.7]"
-        />
-        <div
-          className="absolute inset-0 bg-[linear-gradient(0deg,#000_0%,rgba(0,0,0,0.48)_48%,rgba(0,0,0,0.24)_100%)] sm:bg-[linear-gradient(90deg,rgba(0,0,0,0.92)_0%,rgba(0,0,0,0.58)_43%,rgba(0,0,0,0.12)_74%),linear-gradient(0deg,#000_0%,rgba(0,0,0,0.15)_42%,rgba(0,0,0,0.28)_100%)]"
-          aria-hidden
-        />
-        <div className="arena-noise pointer-events-none absolute inset-0 opacity-[0.035] mix-blend-soft-light" aria-hidden />
+      <section className="relative flex min-h-svh items-end overflow-hidden border-b hairline bg-black py-28 sm:min-h-[860px] sm:py-32">
+        <RomanHeroBackdrop />
+
+        <div className="absolute right-5 top-24 z-10 hidden items-center gap-3 font-mono text-[8px] uppercase tracking-[0.2em] text-white/45 sm:flex lg:right-8">
+          <span>Field I</span>
+          <span className="h-px w-12 bg-white/30" aria-hidden />
+          <span>Public competition</span>
+        </div>
 
         <Container className="relative z-10 pb-16 sm:pb-20">
           <Reveal>
@@ -263,6 +258,8 @@ export default async function HomePage() {
         </div>
       </div>
 
+      <RomanArtInterlude />
+
       <section className="border-b hairline bg-ink-900 py-20 sm:py-28 lg:py-32">
         <Container>
           <Reveal>
@@ -373,8 +370,21 @@ export default async function HomePage() {
         </Container>
       </section>
 
-      <section className="py-24 text-center sm:py-36">
-        <Container>
+      <section className="relative overflow-hidden border-b hairline py-24 text-center sm:py-36">
+        <Image
+          src="/art/roman-victory.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          className="pointer-events-none object-cover object-[52%_34%] opacity-[0.2] grayscale-[0.25] saturate-[0.5]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.38),#000_78%)]"
+          aria-hidden
+        />
+        <div className="arena-noise pointer-events-none absolute inset-0 opacity-[0.045]" aria-hidden />
+        <Container className="relative">
           <Reveal>
             <Label className="text-arena">
               {upcoming[0]
