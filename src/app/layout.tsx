@@ -16,7 +16,10 @@ export const metadata: Metadata = {
     type: 'website',
     images: ['/og.png'],
   },
-  icons: { icon: '/favicon.svg' },
+  icons: {
+    icon: [{ url: '/favicon.png', type: 'image/png' }],
+    apple: [{ url: '/apple-touch-icon.png', type: 'image/png' }],
+  },
 };
 
 export const viewport: Viewport = {

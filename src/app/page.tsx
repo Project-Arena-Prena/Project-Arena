@@ -11,7 +11,6 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
-import { ArenaMark } from '@/components/arena-mark';
 import { Countdown } from '@/components/countdown';
 import { Leaderboard } from '@/components/leaderboard';
 import { Reveal } from '@/components/reveal';
@@ -101,9 +100,15 @@ export default async function HomePage() {
 
         <Container className="relative z-10 pb-16 sm:pb-20">
           <Reveal>
-            <div className="mb-6 flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-bone sm:mb-8">
-              <ArenaMark className="h-9 w-9 drop-shadow-[0_0_16px_rgba(232,80,2,0.22)]" />
-              <span>Project Arena</span>
+            <div className="mb-6 flex items-center gap-4 sm:mb-8">
+              <Image
+                src="/project-arena-logo.png"
+                alt="Project Arena"
+                width={1536}
+                height={1024}
+                sizes="(min-width: 640px) 144px, 120px"
+                className="h-20 w-auto object-contain brightness-0 invert sm:h-24"
+              />
               <span className="h-px w-12 bg-white/40" aria-hidden />
             </div>
           </Reveal>

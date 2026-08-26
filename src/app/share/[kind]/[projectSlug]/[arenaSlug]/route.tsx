@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- ImageResponse renders native image elements. */
 import { ImageResponse } from 'next/og';
 import { getArena, getProject, getStandings } from '@/lib/queries';
 import { formatRank } from '@/lib/format';
@@ -5,7 +6,7 @@ import { formatRank } from '@/lib/format';
 export const runtime = 'nodejs';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ kind: string; projectSlug: string; arenaSlug: string }> },
 ) {
   const { kind, projectSlug, arenaSlug } = await params;
@@ -18,6 +19,7 @@ export async function GET(
   const rank = standing?.rank ?? null;
   const field = standings.length || arena.entrantCount;
   const champion = kind === 'champion' || rank === 1;
+  const markUrl = new URL('/project-arena-symbol.png', request.url).toString();
 
   const headline = champion
     ? 'CHAMPION'
@@ -45,11 +47,18 @@ export async function GET(
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <svg width="42" height="42" viewBox="0 0 48 48" fill="none">
-              <path d="M4 5H21.5L27 12H13V36H27L21.5 43H4V5Z" fill="#E85002" />
-              <path d="M44 5H29.5L24 12H35V36H24L29.5 43H44V5Z" fill="#F9F9F9" />
-              <path d="M21 21H27V27H21V21Z" fill="#E85002" />
-            </svg>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#E85002',
+              }}
+            >
+              <img src={markUrl} width={44} height={44} alt="" style={{ objectFit: 'contain' }} />
+            </div>
             <span style={{ fontSize: 22, letterSpacing: 6, textTransform: 'uppercase' }}>Project Arena</span>
           </div>
           <span style={{ fontSize: 18, letterSpacing: 4, textTransform: 'uppercase', color: champion ? '#D9C3AB' : '#A7A7A7' }}>

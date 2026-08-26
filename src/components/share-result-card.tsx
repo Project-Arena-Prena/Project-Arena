@@ -3,6 +3,7 @@ import type { Arena, Standing } from '@/lib/types';
 import { formatNumber, formatRank } from '@/lib/format';
 import { shareText, xIntentUrl } from '@/lib/share';
 import { siteUrl } from '@/lib/stripe';
+import { ArenaMark } from './arena-mark';
 import { ProjectLogo } from './project-logo';
 
 export function ShareResultCard({ standing, arena }: { standing: Standing; arena: Arena }) {
@@ -30,7 +31,9 @@ export function ShareResultCard({ standing, arena }: { standing: Standing; arena
         <div className="grid-lines pointer-events-none absolute inset-0 opacity-50" aria-hidden />
         <div className="relative flex h-full flex-col justify-between">
           <div className="flex items-center justify-between gap-4">
-            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-bone">Project Arena</span>
+            <span className="inline-flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.28em] text-bone">
+              <ArenaMark className="h-6 w-6" /> Project Arena
+            </span>
             <span className="inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-live">
               <span className="h-1.5 w-1.5 rounded-full bg-live" /> Live result
             </span>
