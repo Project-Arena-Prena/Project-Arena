@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Menu, Radio, X } from 'lucide-react';
 import { ArenaMark } from './arena-mark';
@@ -18,10 +18,32 @@ const NAV = [
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const reduceMotion = useReducedMotion();
+  const isHome = pathname === '/';
+
+  useEffect(() => {
+    if (!isHome) return;
+
+    const updateHeader = () => setScrolled(window.scrollY > 24);
+    const frame = window.requestAnimationFrame(updateHeader);
+    window.addEventListener('scroll', updateHeader, { passive: true });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', updateHeader);
+    };
+  }, [isHome]);
 
   return (
-    <header className="sticky top-0 z-50 border-b hairline bg-black/90 backdrop-blur-xl">
+    <header
+      className={cn(
+        'top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-500',
+        isHome ? 'fixed inset-x-0' : 'sticky border-b hairline bg-black/90 backdrop-blur-xl',
+        isHome && !scrolled
+          ? 'border-b border-transparent bg-gradient-to-b from-black/80 via-black/35 to-transparent'
+          : isHome && 'border-b hairline bg-black/[0.88] backdrop-blur-xl',
+      )}
+    >
       <div className="mx-auto flex h-[68px] w-full max-w-[1280px] items-center justify-between gap-6 px-5 sm:px-8">
         <Link href="/" className="group flex items-center gap-3" onClick={() => setOpen(false)}>
           <motion.span
@@ -92,7 +114,7 @@ export function SiteHeader() {
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
             transition={{ duration: reduceMotion ? 0 : 0.2 }}
-            className="absolute inset-x-0 top-[68px] border-b hairline bg-black px-5 pb-5 sm:px-8 md:hidden"
+            className="absolute inset-x-0 top-[68px] border-b hairline bg-black/95 px-5 pb-5 backdrop-blur-xl sm:px-8 md:hidden"
           >
             <Link
               href="/arena/open-arena-001"

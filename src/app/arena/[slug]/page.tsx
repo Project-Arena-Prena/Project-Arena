@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
@@ -84,7 +85,21 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
   return (
     <div className="pb-20">
       <section className="relative overflow-hidden border-b hairline bg-ink-900">
-        <div className="grid-lines pointer-events-none absolute inset-0 opacity-30 [mask-image:linear-gradient(to_right,black,transparent_76%)]" aria-hidden />
+        <Image
+          src="/art/roman-arena-field.webp"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="roman-art-drift pointer-events-none object-cover object-[66%_center] opacity-[0.58] saturate-[0.68] contrast-[1.1]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#080808_0%,rgba(8,8,8,0.94)_38%,rgba(8,8,8,0.55)_70%,rgba(8,8,8,0.6)_100%),linear-gradient(0deg,#080808_0%,transparent_62%)]"
+          aria-hidden
+        />
+        <div className="grid-lines pointer-events-none absolute inset-0 opacity-20 [mask-image:linear-gradient(to_right,black,transparent_76%)]" aria-hidden />
+        <div className="arena-noise pointer-events-none absolute inset-0 opacity-[0.045]" aria-hidden />
         <div className="absolute inset-y-0 left-0 w-1 bg-arena shadow-[0_0_24px_rgba(232,80,2,0.35)]" aria-hidden />
         <Container className="relative flex flex-col gap-10 py-14 lg:flex-row lg:items-end lg:justify-between lg:gap-16 lg:py-20">
           <Reveal className="flex min-w-0 flex-col gap-4">
@@ -101,7 +116,7 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
             <p className="max-w-xl text-sm leading-relaxed text-bone-dim">{arena.theme}</p>
           </Reveal>
 
-          <Reveal delay={0.06} className="flex shrink-0 flex-col gap-4 lg:items-end">
+          <Reveal delay={0.06} className="flex shrink-0 flex-col gap-4 lg:min-w-[300px] lg:items-end lg:border-l lg:border-white/20 lg:pl-8">
             <Label>{CLOCK_LABEL[arena.status]}</Label>
             {isLive ? <Countdown target={arena.endsAt} size="lg" /> : null}
             {isUpcoming && !isCancelled ? <Countdown target={arena.startsAt} size="lg" showDays /> : null}
