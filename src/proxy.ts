@@ -16,7 +16,10 @@ export async function proxy(request: NextRequest) {
   ) {
     const callback = request.nextUrl.clone();
     callback.pathname = '/auth/callback';
-    callback.searchParams.set('next', '/dashboard');
+    // Try the operator destination first. `requireAdmin` sends ordinary
+    // Builders back to `/dashboard`, while administrators land where their
+    // original sign-in flow intended.
+    callback.searchParams.set('next', '/admin');
     return NextResponse.redirect(callback);
   }
 
