@@ -1,5 +1,5 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import { ArenaMark } from './arena-mark';
 import { Container } from './ui';
 
 const EXPLORE = [
@@ -20,11 +20,15 @@ export function SiteFooter() {
       <Container>
         <div className="flex flex-col gap-14 border-t hairline py-12 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-sm">
-            <Link href="/" className="inline-flex items-center gap-3">
-              <ArenaMark className="h-7 w-7" />
-              <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em]">
-                Project Arena
-              </span>
+            <Link href="/" className="inline-flex">
+              <Image
+                src="/project-arena-logo.png"
+                alt="Project Arena"
+                width={1536}
+                height={1024}
+                sizes="144px"
+                className="h-24 w-auto object-contain brightness-0 invert"
+              />
             </Link>
             <p className="mt-5 text-sm leading-relaxed text-bone-dim">
               Where projects compete for attention.
