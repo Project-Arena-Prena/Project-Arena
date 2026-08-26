@@ -12,12 +12,13 @@ export default async function AdminHomePage() {
   const overview = await getAdminOverview();
 
   return (
-    <Container className="py-12">
-      <Label>Operations</Label>
-      <h1 className="mt-4 text-4xl font-semibold tracking-headline">Arena control</h1>
+    <Container className="py-12 sm:py-16">
+      <Label className="text-arena">Operations</Label>
+      <h1 className="mt-4 text-[clamp(3.2rem,7vw,5.8rem)] font-semibold uppercase leading-[0.84] tracking-[-0.07em]">Arena control</h1>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-2">
-        <Panel className="p-6">
+        <Panel className="relative overflow-hidden border-white/30 p-6">
+          <span className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
           <Label>Current Arena</Label>
           {overview.current ? (
             <>
@@ -38,7 +39,7 @@ export default async function AdminHomePage() {
             <p className="mt-4 text-sm text-bone-dim">No live Arena.</p>
           )}
         </Panel>
-        <Panel className="p-6">
+        <Panel className="border-white/30 p-6">
           <Label>Next Arena</Label>
           {overview.next ? (
             <>

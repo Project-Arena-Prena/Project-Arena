@@ -9,7 +9,7 @@ export function Container({ className, children }: { className?: string; childre
 }
 
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn('border hairline bg-ink-900/60', className)}>{children}</div>;
+  return <div className={cn('border hairline bg-ink-900', className)}>{children}</div>;
 }
 
 export function Label({ className, children }: { className?: string; children: ReactNode }) {
@@ -17,7 +17,7 @@ export function Label({ className, children }: { className?: string; children: R
 }
 
 export function Rule({ className }: { className?: string }) {
-  return <div className={cn('h-px w-full bg-white/[0.08]', className)} />;
+  return <div className={cn('h-px w-full bg-white/[0.14]', className)} />;
 }
 
 /* ------------------------------------------------------------------- buttons */
@@ -26,11 +26,11 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const BUTTON_BASE =
-  'inline-flex items-center justify-center gap-2 border font-mono uppercase tracking-widest transition-colors duration-200 disabled:pointer-events-none disabled:opacity-40';
+  'inline-flex items-center justify-center gap-2 border font-mono font-semibold uppercase tracking-[0.13em] transition-[transform,background-color,border-color,color,box-shadow] duration-200 hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40 disabled:hover:translate-y-0';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'border-arena bg-arena text-ink-950 hover:bg-arena-hot hover:border-arena-hot',
-  secondary: 'border-white/15 bg-transparent text-bone hover:border-white/40 hover:bg-white/[0.04]',
+  primary: 'border-arena bg-arena text-ink-950 hover:border-arena-hot hover:bg-arena-hot hover:shadow-[0_12px_34px_rgba(232,80,2,0.18)]',
+  secondary: 'border-white/30 bg-transparent text-bone hover:border-white/70 hover:bg-white/[0.04]',
   ghost: 'border-transparent bg-transparent text-bone-dim hover:text-bone',
 };
 
@@ -68,7 +68,7 @@ export function LiveDot({ className }: { className?: string }) {
   return (
     <span className={cn('relative inline-flex h-1.5 w-1.5', className)} aria-hidden>
       <span className="absolute inset-0 rounded-full bg-live animate-pulse-dot" />
-      <span className="absolute inset-0 rounded-full bg-live blur-[3px] opacity-70" />
+      <span className="absolute inset-0 rounded-full bg-live blur-[5px] opacity-80" />
     </span>
   );
 }
@@ -102,7 +102,7 @@ export function StatusBadge({
     | 'expired';
 }) {
   const map: Record<string, { label: string; className: string; live?: boolean }> = {
-    live: { label: 'Live', className: 'border-live/30 bg-live/10 text-live', live: true },
+    live: { label: 'Live', className: 'border-live/40 bg-live/10 text-live', live: true },
     competing: { label: 'Competing', className: 'border-live/30 bg-live/10 text-live', live: true },
     upcoming: { label: 'Upcoming', className: 'border-white/15 text-bone-dim' },
     registration: { label: 'Registration', className: 'border-white/15 text-bone-dim' },
@@ -177,7 +177,7 @@ export function SectionHeader({
     <div className={cn('flex items-end justify-between gap-6 pb-5', className)}>
       <div className="flex flex-col gap-2">
         {eyebrow ? <Label>{eyebrow}</Label> : null}
-        <h2 className="text-2xl font-semibold tracking-headline sm:text-3xl">{title}</h2>
+        <h2 className="text-3xl font-semibold uppercase leading-[0.95] tracking-[-0.055em] sm:text-5xl">{title}</h2>
       </div>
       {action}
     </div>

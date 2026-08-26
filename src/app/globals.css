@@ -17,9 +17,7 @@
 
   body {
     @apply overflow-x-hidden bg-ink-950 text-bone font-sans antialiased;
-    background-image:
-      radial-gradient(120% 80% at 50% -10%, rgba(255, 75, 31, 0.06), transparent 60%),
-      linear-gradient(to bottom, #07080a, #07080a);
+    background-image: linear-gradient(to bottom, #000, #000);
   }
 
   ::selection {
@@ -37,7 +35,7 @@
 
 @layer components {
   .hairline {
-    @apply border-white/[0.08];
+    @apply border-white/[0.14];
   }
 
   .grid-lines {
@@ -48,11 +46,15 @@
   }
 
   .label {
-    @apply font-mono text-[10px] uppercase tracking-widest text-bone-faint;
+    @apply font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-bone-faint;
   }
 
   .num {
     @apply font-mono tabular-nums;
+  }
+
+  .arena-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
   }
 }
 

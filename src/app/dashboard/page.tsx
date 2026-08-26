@@ -39,7 +39,8 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <section className="relative overflow-hidden border-b hairline">
+      <section className="relative overflow-hidden border-b hairline bg-ink-900">
+        <div className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
         <div
           className="grid-lines pointer-events-none absolute inset-0 opacity-40 [mask-image:linear-gradient(to_bottom,black,transparent)]"
           aria-hidden
@@ -51,8 +52,8 @@ export default async function DashboardPage() {
         <Container className="relative py-10 sm:py-12 lg:py-14">
           <Reveal className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <Label>Builder command center</Label>
-              <h1 className="mt-4 max-w-3xl text-[clamp(2.5rem,6vw,64px)] font-semibold leading-[0.92] tracking-headline text-bone">
+              <Label className="text-arena">Builder command center</Label>
+              <h1 className="mt-4 max-w-4xl text-[clamp(3.2rem,7vw,5.8rem)] font-semibold uppercase leading-[0.84] tracking-[-0.07em] text-bone">
                 Your Builder dashboard
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-bone-dim sm:text-base">
@@ -86,7 +87,7 @@ export default async function DashboardPage() {
         <Container className="py-12 sm:py-16">
           <Reveal>
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-              <Panel className="overflow-hidden">
+              <Panel className="overflow-hidden border-white/30">
                 <div className="border-b hairline px-5 py-5 sm:px-7 sm:py-6">
                   <Label>Start here</Label>
                   <h2 className="mt-3 text-2xl font-semibold tracking-headline sm:text-3xl">
@@ -203,7 +204,7 @@ export default async function DashboardPage() {
                       </Link>
                     }
                   />
-                  <Panel>
+                  <Panel className="border-white/30">
                     {projects.map((project) => (
                       <ProjectRow
                         key={project.id}
@@ -231,7 +232,7 @@ export default async function DashboardPage() {
                 {pendingReviews.length > 0 ? (
                   <Reveal delay={0.14}>
                     <SectionHeader eyebrow="Status" title="Pending review" />
-                    <Panel>
+                    <Panel className="border-white/30">
                       {pendingReviews.map((item) => (
                         <div
                           key={item.entry.id}

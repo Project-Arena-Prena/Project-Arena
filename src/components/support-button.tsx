@@ -76,10 +76,10 @@ export function SupportButton({
         disabled={pending}
         title={error ?? undefined}
         className={cn(
-          'inline-flex h-7 items-center gap-1 border px-2 font-mono text-[10px] uppercase tracking-widest transition-colors',
+          'inline-flex h-8 items-center gap-1 border px-2.5 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] transition-colors',
           supported
-            ? 'border-arena/40 bg-arena/10 text-arena'
-            : 'border-white/15 text-bone-dim hover:border-white/40 hover:text-bone',
+            ? 'border-arena bg-arena text-black'
+            : 'border-white/30 text-bone-dim hover:border-arena hover:text-arena',
         )}
       >
         {supported ? <Check className="h-3 w-3" /> : null}
@@ -97,10 +97,10 @@ export function SupportButton({
         disabled={pending}
         title={error ?? undefined}
         className={cn(
-          'inline-flex h-8 items-center gap-1.5 border px-2.5 font-mono text-[10px] uppercase tracking-widest transition-colors duration-200',
+          'inline-flex h-9 items-center gap-1.5 border px-3 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] transition-colors duration-200',
           supported
-            ? 'border-arena/40 bg-arena/10 text-arena'
-            : 'border-white/15 text-bone-dim hover:border-white/40 hover:text-bone',
+            ? 'border-arena bg-arena text-black'
+            : 'border-white/30 text-bone-dim hover:border-arena hover:text-arena',
         )}
       >
         {supported ? <Check className="h-3 w-3" /> : null}
@@ -112,7 +112,7 @@ export function SupportButton({
         rel="noopener noreferrer nofollow"
         onClick={() => getVisitorId()}
         aria-label="Visit project"
-        className="hidden h-8 w-8 items-center justify-center border border-white/15 text-bone-dim transition-colors duration-200 hover:border-white/40 hover:text-bone md:inline-flex"
+        className="hidden h-9 w-9 items-center justify-center border border-white/30 text-bone-dim transition-colors duration-200 hover:border-white/70 hover:text-bone md:inline-flex"
       >
         <ArrowUpRight className="h-3.5 w-3.5" />
       </a>

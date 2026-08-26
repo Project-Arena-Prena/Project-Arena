@@ -114,8 +114,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="pb-20">
-      <section className="border-b hairline">
-        <Container className="py-10 lg:py-14">
+      <section className="relative overflow-hidden border-b hairline bg-ink-900">
+        <div className="grid-lines pointer-events-none absolute inset-0 opacity-25 [mask-image:linear-gradient(to_right,black,transparent_78%)]" aria-hidden />
+        <div className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
+        <Container className="relative py-12 lg:py-20">
           {competing ? (
             <Reveal className="pb-6">
               <Link
@@ -132,23 +134,25 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
             </Reveal>
           ) : null}
 
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-16">
-            <Reveal className="flex min-w-0 flex-col gap-4">
+          <div className="flex flex-col gap-9 lg:flex-row lg:items-end lg:justify-between lg:gap-16">
+            <Reveal className="flex min-w-0 items-start gap-5 sm:gap-7">
               <ProjectLogo name={project.name} logoUrl={project.logoUrl} size="lg" />
-              <span className="inline-flex w-fit items-center border hairline px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-bone-dim">
-                {project.category}
-              </span>
-              <h1 className="text-[42px] font-semibold leading-[0.9] tracking-headline sm:text-6xl lg:text-7xl">
-                {project.name}
-              </h1>
-              <p className="max-w-xl text-sm leading-relaxed text-bone-dim sm:text-base">
-                {project.tagline}
-              </p>
-              <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-[10px] uppercase tracking-widest text-bone-faint">
-                <span>Built by</span>
-                <span className="text-bone-dim">@{project.builder.handle}</span>
-                <span className="text-bone-faint/50">/</span>
-                <span className="text-bone-dim">{project.builder.displayName}</span>
+              <div className="min-w-0">
+                <span className="inline-flex w-fit items-center border border-white/30 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-bone-dim">
+                  {project.category}
+                </span>
+                <h1 className="mt-4 text-[clamp(3.5rem,9vw,7rem)] font-semibold uppercase leading-[0.82] tracking-[-0.075em]">
+                  {project.name}
+                </h1>
+                <p className="mt-5 max-w-2xl text-base leading-relaxed text-bone-dim sm:text-lg">
+                  {project.tagline}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-bone-faint">
+                  <span>Built by</span>
+                  <span className="text-bone-dim">@{project.builder.handle}</span>
+                  <span className="text-bone-faint/50">/</span>
+                  <span className="text-bone-dim">{project.builder.displayName}</span>
+                </div>
               </div>
             </Reveal>
 
@@ -177,15 +181,18 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       ) : null}
 
       <Container className="pt-10 sm:pt-12">
-        <Reveal delay={0.1} className="flex flex-col gap-10 lg:flex-row lg:gap-16">
+        <Reveal delay={0.1} className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-20">
           <div className="flex min-w-0 flex-1 flex-col gap-4">
             <Label>About</Label>
-            <p className="max-w-[62ch] text-sm leading-relaxed text-bone-dim sm:text-[15px]">
+            <h2 className="max-w-3xl text-3xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-5xl">
+              {project.tagline}
+            </h2>
+            <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-bone-dim sm:text-base">
               {project.description}
             </p>
           </div>
 
-          <dl className="w-full shrink-0 border-t hairline lg:w-[300px]">
+          <dl className="w-full shrink-0 border-t border-white/30">
             {meta.map((row) => (
               <div
                 key={row.label}
@@ -228,7 +235,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       </Container>
 
       <Container>
-        <Panel className="mt-12 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+        <Panel className="relative mt-12 flex flex-col gap-5 overflow-hidden border-white/30 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <span className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
           <div className="flex min-w-0 flex-col gap-2">
             <Label>Next Arena</Label>
             <p className="text-lg font-semibold tracking-headline sm:text-xl">
