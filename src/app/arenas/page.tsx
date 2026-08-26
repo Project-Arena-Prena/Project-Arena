@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { CompletedArenaRow, CompletedTableHeader } from '@/components/arenas/completed-arena-row';
 import { LiveArenaPanel } from '@/components/arenas/live-arena-panel';
@@ -37,12 +38,29 @@ export default async function ArenasPage() {
   return (
     <>
       <section className="relative overflow-hidden border-b hairline bg-ink-900">
-        <div className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
-        <div
-          className="grid-lines pointer-events-none absolute inset-0 opacity-60 [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.8),transparent_85%)]"
+        <Image
+          src="/art/roman-arena-field.webp"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="roman-art-drift pointer-events-none object-cover object-[66%_center] opacity-[0.64] saturate-[0.7] contrast-[1.08]"
           aria-hidden
         />
+        <div
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#080808_0%,rgba(8,8,8,0.94)_34%,rgba(8,8,8,0.5)_66%,rgba(8,8,8,0.32)_100%),linear-gradient(0deg,#080808_0%,transparent_55%)]"
+          aria-hidden
+        />
+        <div className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
+        <div
+          className="grid-lines pointer-events-none absolute inset-0 opacity-30 [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.8),transparent_85%)]"
+          aria-hidden
+        />
+        <div className="arena-noise pointer-events-none absolute inset-0 opacity-[0.045]" aria-hidden />
         <Container className="relative py-16 sm:py-20 lg:py-24">
+          <span className="absolute right-5 top-7 hidden font-mono text-[8px] uppercase tracking-[0.2em] text-white/45 sm:block sm:right-8">
+            The field awaits · Gate I
+          </span>
           <Reveal>
             <Label>Arenas</Label>
           </Reveal>
