@@ -5,6 +5,24 @@ type CookiesToSet = { name: string; value: string; options: CookieOptions }[];
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // Supabase falls back to SITE_URL when an environment-specific callback is
+  // missing from its redirect allowlist. Preserve the one-time credential and
+  // send that fallback through the real callback handler instead of rendering
+  // the public homepage and silently dropping the sign-in attempt.
+  if (
+    path === '/' &&
+    (request.nextUrl.searchParams.has('code') || request.nextUrl.searchParams.has('token_hash'))
+  ) {
+    const callback = request.nextUrl.clone();
+    callback.pathname = '/auth/callback';
+    // Try the operator destination first. `requireAdmin` sends ordinary
+    // Builders back to `/dashboard`, while administrators land where their
+    // original sign-in flow intended.
+    callback.searchParams.set('next', '/admin');
+    return NextResponse.redirect(callback);
+  }
+
   const phaseTwoBlocked = [
     '/dashboard/prena',
     '/admin/prena',
@@ -19,7 +37,9 @@ export async function proxy(request: NextRequest) {
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   // Fixture mode: no Supabase, nothing to refresh.
   if (!url || !anonKey) return NextResponse.next();
