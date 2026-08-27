@@ -124,7 +124,7 @@ Deploy to Vercel.
    `https://<domain>/auth/callback`.
 6. Set `ADMIN_EMAILS` to bootstrap the first operator. Production deploys also require
    `CRON_SECRET` and `FRAUD_SALT`. `RESEND_API_KEY` and `EMAIL_FROM` can be added later.
-7. Vercel Cron hits `/api/cron/reconcile` every minute. Reads also lazily reconcile Arena state.
+7. Vercel Cron hits `/api/cron/reconcile` daily at `03:00 UTC`. Reads also lazily reconcile Arena state.
 
 `proxy.ts` refreshes the Supabase session on every request and is a no-op when the environment
 is unset. Its matcher excludes static assets and the Stripe webhook, whose raw body must not be
