@@ -26,12 +26,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'not_refundable' }, { status: 409 });
   }
 
-  if (stripe && payment.provider_payment_id) {
-    await stripe.refunds.create({
+  if (!stripe || !payment.provider_payment_id) {
+    return NextResponse.json({ error: 'stripe_refund_not_configured' }, { status: 503 });
+  }
+
+  try {
+    const refund = await stripe.refunds.create({
       payment_intent: payment.provider_payment_id,
       reason: 'requested_by_customer',
       metadata: { payment_id: id, reason },
+    }, {
+      idempotencyKey: `arena-refund-${id}`,
     });
+
+    // Stripe can hold a refund in a pending state. Let the signed webhook make
+    // the database authoritative only once money has actually been returned.
+    if (refund.status !== 'succeeded') {
+      return NextResponse.json({ ok: false, status: refund.status ?? 'pending' }, { status: 202 });
+    }
+  } catch {
+    return NextResponse.json({ error: 'stripe_refund_failed' }, { status: 502 });
   }
 
   await supabase.rpc('mark_payment_refunded', { p_payment_id: id, p_reason: reason });

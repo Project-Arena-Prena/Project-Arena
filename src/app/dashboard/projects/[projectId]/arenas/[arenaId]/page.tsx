@@ -6,8 +6,7 @@ import { getNextArenaForCategory } from '@/lib/queries';
 import { percentileLabel, visitRate } from '@/lib/scoring';
 import { ButtonLink, Container, EmptyState, Label, Panel, StatusBadge } from '@/components/ui';
 import { formatNumber, formatRank } from '@/lib/format';
-import { shareText, xIntentUrl } from '@/lib/share';
-import { siteUrl } from '@/lib/stripe';
+import { shareAttributionUrl, shareText, xIntentUrl } from '@/lib/share';
 import { VisitsChart } from '@/components/dashboard/visits-chart';
 
 export const metadata: Metadata = { title: 'Arena Performance' };
@@ -28,7 +27,7 @@ export default async function ProjectArenaPage({
   const cancelled = arena.status === 'cancelled';
   const next = finished ? await getNextArenaForCategory(project.category, arena.slug) : null;
   const kind = finished ? (stats.rank === 1 ? 'champion' : 'final') : 'live';
-  const url = `${siteUrl()}/arena/${arena.slug}`;
+  const url = shareAttributionUrl(`/arena/${arena.slug}`, project.slug);
   const text = shareText(kind, {
     projectName: project.name,
     arenaName: arena.name,

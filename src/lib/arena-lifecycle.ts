@@ -17,7 +17,14 @@ export async function reconcileArenas(force = false): Promise<void> {
   const supabase = createAdminClient();
   if (!supabase) return;
 
-  await supabase.rpc('reconcile_arenas');
+  // The Founding Arena wrapper keeps the legacy UI status compatible while
+  // recording the stricter lifecycle phases and freezing immutable results.
+  const { error } = await supabase.rpc('reconcile_founding_arenas');
+  // A database that has not received the additive migration can still serve
+  // the existing commercial loop while an operator completes the rollout.
+  if (error?.code === 'PGRST202' || error?.message.includes('reconcile_founding_arenas')) {
+    await supabase.rpc('reconcile_arenas');
+  }
   await flushEmailOutbox().catch(() => undefined);
 }
 

@@ -1,8 +1,7 @@
 import { ArrowUpRight } from 'lucide-react';
 import type { Arena, Standing } from '@/lib/types';
 import { formatNumber, formatRank } from '@/lib/format';
-import { shareText, xIntentUrl } from '@/lib/share';
-import { siteUrl } from '@/lib/stripe';
+import { shareAttributionUrl, shareText, xIntentUrl } from '@/lib/share';
 import { ArenaMark } from './arena-mark';
 import { ProjectLogo } from './project-logo';
 
@@ -15,7 +14,7 @@ export function ShareResultCard({ standing, arena }: { standing: Standing; arena
     timeZone: 'UTC',
     timeZoneName: 'short',
   }).format(new Date(arena.endsAt));
-  const url = `${siteUrl()}/arena/${arena.slug}`;
+  const url = shareAttributionUrl(`/arena/${arena.slug}`, standing.project.slug);
   const text = shareText(arena.status === 'finished' ? (standing.rank === 1 ? 'champion' : 'final') : 'live', {
     projectName: standing.project.name,
     arenaName: arena.name,
