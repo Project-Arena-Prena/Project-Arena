@@ -50,7 +50,7 @@ Events:
 
 Supabase Auth → URL configuration must include `https://<domain>/auth/callback` and the site URL.
 
-Vercel Cron already hits `/api/cron/reconcile` every minute (`vercel.json`). Set the same `CRON_SECRET` on Vercel.
+Vercel Cron hits `/api/cron/reconcile` daily at `03:00 UTC` (`vercel.json`). Set the same `CRON_SECRET` on Vercel. Reads lazily reconcile Arena state between scheduled runs.
 
 ## 2. Database
 
