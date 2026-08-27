@@ -67,11 +67,14 @@ async function refundByCharge(charge: Stripe.Charge): Promise<void> {
   if (!paymentIntent) return;
   const { data, error: lookupError } = await supabase
     .from('payments')
-    .select('id')
+    .select('id, amount')
     .eq('provider_payment_id', paymentIntent)
     .maybeSingle();
   if (lookupError) throw new Error(`payment_lookup_failed: ${lookupError.message}`);
   if (!data) return;
+  // A partial refund does not cancel an Arena Entry. Only a full refund is
+  // reflected in the payment state; partial credits need their own workflow.
+  if (charge.amount_refunded < charge.amount || charge.amount_refunded < data.amount) return;
   const { error } = await supabase.rpc('mark_payment_refunded', {
     p_payment_id: data.id,
     p_reason: 'stripe_refund',

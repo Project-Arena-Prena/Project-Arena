@@ -21,7 +21,7 @@ import {
 } from '@/components/ui';
 import { formatDate, formatMoney, formatNumber } from '@/lib/format';
 import { trackEvent } from '@/lib/analytics';
-import { getAllArenaSlugs, getArena, getLiveArena, getStandings } from '@/lib/queries';
+import { getAllArenaSlugs, getArena, getFinalArenaStandings, getLiveArena } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
@@ -66,7 +66,7 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
   if (!arena) notFound();
 
   const [standings, liveArena] = await Promise.all([
-    getStandings(slug),
+    getFinalArenaStandings(slug),
     getLiveArena(),
   ]);
   await trackEvent('arena_viewed', { arenaId: arena.id });
@@ -290,10 +290,10 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
             </Link>
           ) : (
             <Link
-              href="/hall-of-fame"
+              href={arena.status === 'finished' ? `/arena/${arena.slug}/results` : '/hall-of-fame'}
               className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-bone-dim transition-colors duration-200 hover:text-bone"
             >
-              Hall of Fame
+              {arena.status === 'finished' ? 'Official Results' : 'Hall of Fame'}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           )}

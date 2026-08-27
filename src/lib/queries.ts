@@ -110,6 +110,32 @@ export async function getStandings(slug: string, limit?: number): Promise<Standi
   return typeof limit === 'number' ? rows.slice(0, limit) : rows;
 }
 
+/**
+ * Completed Arenas read from the frozen result ledger. Live and pre-migration
+ * Arenas deliberately fall back to the active standings view.
+ */
+export async function getFinalArenaStandings(slug: string): Promise<Standing[]> {
+  const [arena, supabase] = await Promise.all([getArena(slug), createClient()]);
+  if (!arena || arena.status !== 'finished' || !supabase) return getStandings(slug);
+
+  const { data, error } = await supabase
+    .from('arena_results')
+    .select('*, projects:project_id(*)')
+    .eq('arena_id', arena.id)
+    .order('final_rank', { ascending: true });
+
+  if (error || !data?.length) return getStandings(slug);
+  return (data as Row[]).map((row) => {
+    const project = nested<Row>(row.projects) ?? {};
+    return standingFromRow({
+      ...project,
+      ...row,
+      rank: row.final_rank,
+      unique_visit_count: row.qualified_visit_count,
+    });
+  });
+}
+
 async function attachMomentum(arenaSlug: string, rows: Standing[]): Promise<Standing[]> {
   if (rows.length === 0) return rows;
   const admin = createAdminClient();
@@ -225,7 +251,7 @@ export async function getHallOfFame(): Promise<ArenaResult[]> {
       const results: ArenaResult[] = [];
       for (const row of data as Row[]) {
         const arena = arenaFromRow(row);
-        const standings = await getStandings(arena.slug);
+        const standings = await getFinalArenaStandings(arena.slug);
         const champion = standings[0];
         if (!champion) continue;
         results.push({ arena, champion, runnersUp: standings.slice(1, 3) });
