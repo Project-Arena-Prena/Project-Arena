@@ -6,26 +6,27 @@ const config: Config = {
     extend: {
       colors: {
         ink: {
-          950: '#000000',
-          900: '#080808',
-          850: '#0A0A0A',
-          800: '#151515',
-          700: '#222222',
-          600: '#333333',
+          950: '#050403',
+          900: '#0B0907',
+          850: '#100D0A',
+          800: '#191511',
+          700: '#28221C',
+          600: '#39312A',
         },
         bone: {
-          DEFAULT: '#F9F9F9',
-          dim: '#A7A7A7',
-          faint: '#646464',
+          DEFAULT: '#F2EEE7',
+          dim: '#AAA198',
+          faint: '#6F6861',
         },
         arena: { DEFAULT: '#E85002', hot: '#F16001' },
         live: '#F16001',
         gain: '#E85002',
-        gold: '#D9C3AB',
+        gold: '#CDB58E',
         danger: '#C10801',
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Arial Narrow', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       letterSpacing: {
