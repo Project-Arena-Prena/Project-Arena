@@ -38,7 +38,7 @@ export function CinematicHomeHero({
   const backdropY = useTransform(progress, [0, 1], ['0%', '-3.5%']);
   const copyY = useTransform(progress, [0, 0.72, 1], ['0%', '-2.5%', '-5%']);
   const quietLines = useTransform(progress, [0, 0.42, 0.8], [1, 0.72, 0.42]);
-  const accentGlow = useTransform(progress, [0, 0.46, 1], [0.28, 0.72, 1]);
+  const accentGlow = useTransform(progress, [0, 0.46, 1], [0.52, 0.82, 1]);
   const stageOpacity = useTransform(progress, [0, 0.08, 0.22, 0.9, 1], [0.18, 0.42, 1, 1, 0.55]);
   const stageX = useTransform(progress, [0, 0.24, 1], ['9%', '0%', '-2%']);
   const stageY = useTransform(progress, [0, 0.55, 1], ['5%', '0%', '-4%']);
