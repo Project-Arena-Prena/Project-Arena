@@ -58,6 +58,7 @@ function bodyFor(mail: Mail): string {
 async function deliver(mail: Mail): Promise<'sent' | 'mocked' | 'failed'> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM ?? 'Project Arena <arena@localhost>';
+  const replyTo = process.env.EMAIL_REPLY_TO;
   if (!key) {
     console.info('[email:mock]', subjectFor(mail), '→', mail.to, bodyFor(mail));
     return 'mocked';
@@ -72,6 +73,7 @@ async function deliver(mail: Mail): Promise<'sent' | 'mocked' | 'failed'> {
       body: JSON.stringify({
         from,
         to: mail.to,
+        ...(replyTo ? { reply_to: replyTo } : {}),
         subject: subjectFor(mail),
         text: bodyFor(mail),
       }),

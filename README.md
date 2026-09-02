@@ -35,7 +35,14 @@ Open http://localhost:3000.
 
 Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npm run typecheck`, `npm run setup:env`, `npm run dry-run`.
 
-First paid Arena: follow `docs/runbook-arena-001.md`. Admin → Dry-run runs the same clock.
+Before a real-money Arena, use these documents in order:
+
+1. `docs/founding-arena-launch-readiness.md` — evidence-backed go/no-go gate.
+2. `docs/agent-execution-blueprint.md` — bounded ownership and verification for agents.
+3. `docs/runbook-arena-001.md` — operator steps for the rehearsal and event.
+4. `docs/roadmap.md` — what unlocks only after the Founding Arena is proven.
+
+Admin → Dry-run runs the same clock used by an Arena.
 
 ## Runs without Supabase
 
@@ -124,7 +131,7 @@ Deploy to Vercel.
    `https://<domain>/auth/callback`.
 6. Set `ADMIN_EMAILS` to bootstrap the first operator. Production deploys also require
    `CRON_SECRET` and `FRAUD_SALT`. `RESEND_API_KEY` and `EMAIL_FROM` can be added later.
-7. Vercel Cron hits `/api/cron/reconcile` every minute. Reads also lazily reconcile Arena state.
+7. Vercel Cron hits `/api/cron/reconcile` daily at `03:00 UTC`. Reads also lazily reconcile Arena state.
 
 `proxy.ts` refreshes the Supabase session on every request and is a no-op when the environment
 is unset. Its matcher excludes static assets and the Stripe webhook, whose raw body must not be
