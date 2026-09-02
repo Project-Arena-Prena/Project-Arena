@@ -35,7 +35,14 @@ Open http://localhost:3000.
 
 Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npm run typecheck`, `npm run setup:env`, `npm run dry-run`.
 
-First paid Arena: follow `docs/runbook-arena-001.md`. Admin → Dry-run runs the same clock.
+Before a real-money Arena, use these documents in order:
+
+1. `docs/founding-arena-launch-readiness.md` — evidence-backed go/no-go gate.
+2. `docs/agent-execution-blueprint.md` — bounded ownership and verification for agents.
+3. `docs/runbook-arena-001.md` — operator steps for the rehearsal and event.
+4. `docs/roadmap.md` — what unlocks only after the Founding Arena is proven.
+
+Admin → Dry-run runs the same clock used by an Arena.
 
 ## Runs without Supabase
 
