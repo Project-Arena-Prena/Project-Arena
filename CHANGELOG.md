@@ -10,8 +10,9 @@ All notable changes to Project Arena are recorded here.
   that is resilient to link-prefetching security scanners.
 - Hardened transactional email delivery with retry-safe outbox behavior,
   provider error recording, and per-message idempotency keys.
-- Switched the Playwright wallet harness to the stable Webpack development
-  server so CI reaches the browser tests within its job budget.
+- Kept the Playwright wallet harness production-inaccessible while allowing
+  local and CI development servers to exercise it, and switched that harness
+  to the stable Webpack development server.
 - Added launch-readiness documentation for authentication, payments, email,
   lifecycle finalization, analytics, and refund rehearsal evidence.
 - Ignored the local npm cache directory used by release validation.
