@@ -29,10 +29,17 @@ export async function proxy(request: NextRequest) {
     '/api/prena',
     '/api/wallet',
     '/api/rewards',
-    '/dev-wallet-harness',
   ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 
-  if (phaseTwoBlocked) {
+  // The wallet harness is deliberately available to local/CI development
+  // servers and excluded from production builds by next.config.mjs. Keep a
+  // second production-only guard here as defense in depth without making the
+  // browser suite test a permanent 404 page.
+  const devHarnessBlocked =
+    process.env.NODE_ENV === 'production' &&
+    (path === '/dev-wallet-harness' || path.startsWith('/dev-wallet-harness/'));
+
+  if (phaseTwoBlocked || devHarnessBlocked) {
     return new NextResponse('Not Found', { status: 404 });
   }
 
@@ -83,3 +90,4 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/cron/reconcile|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
   ],
 };
+
