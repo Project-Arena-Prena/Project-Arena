@@ -28,7 +28,11 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `npx next dev -p ${PORT}`,
+    // The CI smoke suite values predictable startup over Turbopack's local
+    // incremental performance. Webpack avoids the observed Turbopack harness
+    // stall that can consume the entire 20-minute Actions job budget before
+    // Playwright reaches its first assertion.
+    command: `npx next dev --webpack -p ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
@@ -42,3 +46,4 @@ export default defineConfig({
     },
   },
 });
+
