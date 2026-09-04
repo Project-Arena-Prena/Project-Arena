@@ -10,9 +10,23 @@ export type EmailTemplate =
   | 'reward_claimable';
 
 interface Mail {
+  id?: string;
   template: EmailTemplate;
   to: string;
   payload: Record<string, unknown>;
+}
+
+interface DeliveryResult {
+  status: 'sent' | 'mocked' | 'failed';
+  error: string | null;
+}
+
+function deliveryConfig(): { key: string; from: string; replyTo?: string } | null {
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!key || !from || from.includes('@localhost')) return null;
+  const replyTo = process.env.EMAIL_REPLY_TO;
+  return { key, from, ...(replyTo ? { replyTo } : {}) };
 }
 
 function subjectFor(mail: Mail): string {
@@ -55,39 +69,43 @@ function bodyFor(mail: Mail): string {
   }
 }
 
-async function deliver(mail: Mail): Promise<'sent' | 'mocked' | 'failed'> {
-  const key = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM ?? 'Project Arena <arena@localhost>';
-  const replyTo = process.env.EMAIL_REPLY_TO;
-  if (!key) {
+async function deliver(mail: Mail): Promise<DeliveryResult> {
+  const config = deliveryConfig();
+  if (!config) {
+    if (process.env.NODE_ENV === 'production') {
+      return { status: 'failed', error: 'email_delivery_not_configured' };
+    }
     console.info('[email:mock]', subjectFor(mail), '→', mail.to, bodyFor(mail));
-    return 'mocked';
+    return { status: 'mocked', error: null };
   }
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${key}`,
+        Authorization: `Bearer ${config.key}`,
         'Content-Type': 'application/json',
+        ...(mail.id ? { 'Idempotency-Key': `arena-email-${mail.id}` } : {}),
       },
       body: JSON.stringify({
-        from,
+        from: config.from,
         to: mail.to,
-        ...(replyTo ? { reply_to: replyTo } : {}),
+        ...(config.replyTo ? { reply_to: config.replyTo } : {}),
         subject: subjectFor(mail),
         text: bodyFor(mail),
       }),
     });
-    return response.ok ? 'sent' : 'failed';
+    return response.ok
+      ? { status: 'sent', error: null }
+      : { status: 'failed', error: `resend_http_${response.status}` };
   } catch {
-    return 'failed';
+    return { status: 'failed', error: 'resend_request_failed' };
   }
 }
 
 export async function flushEmailOutbox(limit = 20): Promise<number> {
   // Preserve queued production mail until a provider is configured. This also
   // prevents recipient addresses and message bodies from reaching runtime logs.
-  if (process.env.NODE_ENV === 'production' && !process.env.RESEND_API_KEY) return 0;
+  if (process.env.NODE_ENV === 'production' && !deliveryConfig()) return 0;
 
   const supabase = createAdminClient();
   if (!supabase) return 0;
@@ -101,7 +119,8 @@ export async function flushEmailOutbox(limit = 20): Promise<number> {
 
   let sent = 0;
   for (const row of data) {
-    const status = await deliver({
+    const result = await deliver({
+      id: row.id as string,
       template: row.template as EmailTemplate,
       to: row.to_email as string,
       payload: (row.payload ?? {}) as Record<string, unknown>,
@@ -109,12 +128,12 @@ export async function flushEmailOutbox(limit = 20): Promise<number> {
     await supabase
       .from('email_outbox')
       .update({
-        status,
-        sent_at: status === 'failed' ? null : new Date().toISOString(),
-        error: status === 'failed' ? 'delivery_failed' : null,
+        status: result.status,
+        sent_at: result.status === 'failed' ? null : new Date().toISOString(),
+        error: result.error,
       })
       .eq('id', row.id);
-    if (status !== 'failed') sent += 1;
+    if (result.status !== 'failed') sent += 1;
   }
   return sent;
 }
@@ -133,3 +152,4 @@ export async function queueEmail(mail: Mail): Promise<void> {
   });
   await flushEmailOutbox();
 }
+
