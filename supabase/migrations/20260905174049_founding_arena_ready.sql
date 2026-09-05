@@ -170,7 +170,7 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  if current_setting('app.arena_result_correction', true) <> 'true' then
+  if current_setting('app.arena_result_correction', true) is distinct from 'true' then
     raise exception 'arena results are immutable; use an authorized correction';
   end if;
   return case when tg_op = 'DELETE' then old else new end;

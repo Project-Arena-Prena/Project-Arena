@@ -1,13 +1,14 @@
 # Founding Arena launch readiness
 
-Last verified: 2026-09-05 UTC.
+Last verified: 2026-09-05 18:53 UTC.
 
 ## Verdict
 
 **Status: not ready for real-money launch.** Authentication, inbound email,
-the application build, and CI are green. The remaining blockers are a
-recoverable production database baseline, the immutable-results migration,
-and current Stripe signing-secret proof.
+the application build, CI, the migration rollback baseline, the Founding Arena
+data model, and the current Stripe sandbox signing-secret pairing are green.
+Managed off-site database recovery is still required before public real-money
+launch.
 
 Launch only when every P0 row below has evidence attached to the release PR.
 
@@ -16,22 +17,23 @@ Launch only when every P0 row below has evidence attached to the release PR.
 | Area | State | Evidence | Gate |
 | --- | --- | --- | --- |
 | Production site | Green | `https://www.projectarena.xyz` returns 200 from Vercel | P0 |
-| Production deploy | Green | Main deployment `0d4f208` is `READY` | P0 |
+| Production deploy | Green | Clean deployment `dpl_9iwjKAVtgsZktciVB4iNY4dUKa6Y` is `READY` and aliased to the canonical domain | P0 |
 | Build quality | Green | `typecheck`, `lint`, and production build pass locally | P0 |
+| Deployment secret hygiene | Green | `.vercelignore` excludes local environment files and release scratch data from deployment uploads | P0 |
 | Cron protection | Green | Anonymous request to `/api/cron/reconcile` returns 401 | P0 |
 | Domain email | Green | Vercel DNS now publishes Hostinger's two apex MX records; delayed mail recovered and a fresh Project Arena code arrived at `hello@projectarena.xyz` | P1 |
 | Supabase health | Green | Project is `ACTIVE_HEALTHY` | P0 |
-| Supabase advisors | Amber | 6 security warnings and 6 performance warnings; helper-function grants require explicit review | P0 |
-| Founding migration | **Red** | `lifecycle_phase`, lifecycle events, and immutable result tables are absent in production | P0 |
-| Migration history | **Red** | Supabase reports no recorded migrations despite a populated schema | P0 |
+| Supabase advisors | Amber | No security errors. The current report has 7 warnings and 13 informational findings; helper-function grants and leaked-password protection require explicit review | P1 |
+| Founding migration | Green | Lifecycle state, audit events, immutable results, deterministic future ranking, and correction controls are live; the fail-closed immutability trigger passed a real blocked-update test | P0 |
+| Migration history | Amber | The five launch migrations are recorded with production timestamps; older schema remains a documented manual baseline | P1 |
 | Live Stripe account | Green | Production endpoint is enabled at the canonical webhook URL with the five required Checkout/payment/refund events | P0 |
-| Stripe sandbox proof | Amber | The sandbox endpoint is enabled for all five required events. Two $29 test PaymentIntents reached Project Arena's ledger and were fully refunded. `STRIPE_WEBHOOK_SECRET` and `STRIPE_SECRET_KEY` exist for Production and Preview, but a fresh event has not yet proven that the current endpoint and deployed secret are paired | P0 |
+| Stripe sandbox proof | Green | Rotated sandbox endpoint `we_1UCOYV501e4UkSme8fCfXMF9` is the only enabled Project Arena endpoint. A signed `payment_intent.payment_failed` rehearsal returned 200, persisted event `evt_pa_clean_deploy_1788634401` exactly once, and the identical replay returned 200 as a duplicate | P0 |
 | Payment ledger | Green | Two sandbox payments were fulfilled into paid ledger rows and approved Arena Entries, then both reconciled to `refunded` without duplicate entries | P0 |
 | Transactional email | Green | Production and Preview define the Resend sender and Hostinger reply address. Fresh payment-received, approved, starting, finished, and reward-claimable probes were marked `sent` without errors and all five arrived at `hello@projectarena.xyz` | P0 |
 | Auth | Green | Canonical URLs, Resend SMTP, code-only templates, six-digit token length, redirect, refresh persistence, admin access, and sign-out are proven; a second independent account successfully signed in through the Hostinger mailbox | P0 |
 | CI wallet smoke | Green | PR #16 merged after both `quality` and `wallet-smoke` completed successfully in workflow run `33913622140` | P0 |
 | Lifecycle precision | Amber | Hobby cron runs daily; page reads lazily reconcile state | P1 |
-| Latest Arena result | **Red** | `open-arena-002` finished with three projects at rank 1 and thirteen at rank 4. Nightmarket is the preserved Champion, while all three rank-1 projects received `+100`; the pending migration now preserves these historical ties and applies a total order only to future Arenas | P0 |
+| Latest Arena result | Green | All 62 finished entries were frozen into 62 immutable results with no duplicates. `open-arena-002` still has three projects at rank 1 and thirteen at rank 4, and its existing Champion was preserved. One older Arena with a missing Champion was repaired deterministically | P0 |
 
 Database counts and seeded competition data are useful for rehearsal, but they
 do not prove a paid production loop. Treat them as fixtures until provenance is
@@ -52,13 +54,16 @@ confirmed.
 
 ### 2. Establish the database baseline
 
-- Export a production schema-only backup and retain a restorable database
-  backup before DDL. The project is on Supabase Free, which explicitly has no
-  scheduled backups; use `supabase db dump`/`pg_dump` or upgrade before applying
-  these migrations.
+- The migration rollback baseline is retained in
+  `launch_backup_20260905`; its four table counts and hashes match and all
+  web-facing roles are denied. See `docs/database-rollback-baseline.md`.
+- The project remains on Supabase Free, which has no scheduled backups. Upgrade
+  or add an encrypted off-site dump-and-restore routine before accepting real
+  money.
 - Compare production objects with `supabase/schema.sql` and every migration.
-- Apply `20260827112225_founding_arena_ready.sql` first, then
-  `20260827161940_backfill_founding_arena_results.sql`.
+- Production applied `20260905174049_founding_arena_ready.sql` first, then
+  `20260905174123_backfill_founding_arena_results.sql`, followed by the
+  Champion repair and fail-closed immutability fix.
 - Verify `arena_results`, `arena_lifecycle_events`, lifecycle RPC grants, and
   one frozen result set for each completed public Arena.
 - Run Supabase security and performance advisors; resolve all security errors
@@ -66,13 +71,15 @@ confirmed.
   grants. The current advisor report includes `is_admin`, `owns_project`, and
   `ensure_builder`; do not revoke a grant required by an RLS policy without
   proving the policy still works.
-- Record the baseline so future changes appear in migration history.
+- The five launch changes now appear in migration history. Reconcile the older
+  manually-created schema before relying on automated migration drift checks.
 
 ### 3. Prove Stripe sandbox end to end
 
-- Revalidate the existing sandbox webhook endpoint at
-  `https://www.projectarena.xyz/api/stripe/webhook` or use a dedicated preview
-  URL with matching preview environment variables.
+- Keep the verified sandbox webhook endpoint at
+  `https://www.projectarena.xyz/api/stripe/webhook`; Production and Preview use
+  the same rotated sandbox signing secret, while superseded endpoints are
+  disabled.
 - Subscribe to:
   `checkout.session.completed`,
   `checkout.session.async_payment_succeeded`,
@@ -83,9 +90,12 @@ confirmed.
   review -> admin approval -> Entry competing.
 - Replay the same event and prove there is no duplicate Entry or ledger change.
 - Refund the payment and prove the local payment state reconciles.
-- Historical sandbox rows prove the fulfillment, approval, idempotency-shaped
-  ledger, and refund model. Send one fresh signed event before launch to prove
-  the currently deployed webhook secret.
+- Historical sandbox rows prove fulfillment, approval, and refund behavior.
+  The current deployment proved signature verification and duplicate handling
+  with `evt_pa_clean_deploy_1788634401`: the first delivery persisted once and the
+  exact replay was acknowledged as a duplicate. Stripe Workbench was
+  unavailable during this check, so repeat one provider-originated delivery as
+  a release smoke test when the dashboard recovers.
 
 ### 4. Configure live Stripe safely
 
