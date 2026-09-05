@@ -57,9 +57,13 @@ create table if not exists public.arena_results (
   rating_delta integer,
   rating_after integer,
   finalized_at timestamptz not null default now(),
-  unique (arena_id, project_id),
-  unique (arena_id, final_rank)
+  unique (arena_id, project_id)
 );
+
+-- Historical Arenas used competition ranking, so exact ties legitimately share
+-- a final rank. Future finalization uses the total ordering below, but the
+-- immutable backfill must preserve already-published results without rewriting
+-- their ranks or Champion.
 
 create index if not exists arena_results_project_idx
   on public.arena_results (project_id, finalized_at desc);
@@ -421,3 +425,4 @@ grant execute on function public.close_arena_entries(uuid) to service_role;
 grant execute on function public.finalize_arena_with_results(uuid) to service_role;
 grant execute on function public.reconcile_founding_arenas() to service_role;
 grant execute on function public.correct_arena_result(uuid, integer, text) to authenticated, service_role;
+
