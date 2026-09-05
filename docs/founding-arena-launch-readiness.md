@@ -7,7 +7,7 @@ Last verified: 2026-09-05 UTC.
 **Status: not ready for real-money launch.** Authentication, inbound email,
 the application build, and CI are green. The remaining blockers are a
 recoverable production database baseline, the immutable-results migration,
-current Stripe signing-secret proof, and real lifecycle-email delivery.
+and current Stripe signing-secret proof.
 
 Launch only when every P0 row below has evidence attached to the release PR.
 
@@ -27,7 +27,7 @@ Launch only when every P0 row below has evidence attached to the release PR.
 | Live Stripe account | Green | Production endpoint is enabled at the canonical webhook URL with the five required Checkout/payment/refund events | P0 |
 | Stripe sandbox proof | Amber | The sandbox endpoint is enabled for all five required events. Two $29 test PaymentIntents reached Project Arena's ledger and were fully refunded. `STRIPE_WEBHOOK_SECRET` and `STRIPE_SECRET_KEY` exist for Production and Preview, but a fresh event has not yet proven that the current endpoint and deployed secret are paired | P0 |
 | Payment ledger | Green | Two sandbox payments were fulfilled into paid ledger rows and approved Arena Entries, then both reconciled to `refunded` without duplicate entries | P0 |
-| Transactional email | Amber | Resend DNS and Supabase custom SMTP are active and auth-code delivery is proven; all 48 application lifecycle messages are still `mocked`, so real lifecycle delivery remains unproven | P0 |
+| Transactional email | Green | Production and Preview define the Resend sender and Hostinger reply address. Fresh payment-received, approved, starting, finished, and reward-claimable probes were marked `sent` without errors and all five arrived at `hello@projectarena.xyz` | P0 |
 | Auth | Green | Canonical URLs, Resend SMTP, code-only templates, six-digit token length, redirect, refresh persistence, admin access, and sign-out are proven; a second independent account successfully signed in through the Hostinger mailbox | P0 |
 | CI wallet smoke | Green | PR #16 merged after both `quality` and `wallet-smoke` completed successfully in workflow run `33913622140` | P0 |
 | Lifecycle precision | Amber | Hobby cron runs daily; page reads lazily reconcile state | P1 |
@@ -103,7 +103,8 @@ confirmed.
   verify `EMAIL_FROM` and `EMAIL_REPLY_TO=hello@projectarena.xyz`, then redeploy
   if either value changes.
 - Send and receive each lifecycle template: payment received, approved,
-  starting, finished, and reward claimable.
+  starting, finished, and reward claimable. This passed on 2026-09-05; repeat it
+  as a release smoke test rather than relying on the older mocked fixtures.
 - Confirm SPF, DKIM, and DMARC alignment and that replies reach Hostinger.
 
 ### 6. Keep Builder authentication green
