@@ -34,13 +34,13 @@ All notable changes to Project Arena are recorded here.
 - CI `quality` and `wallet-smoke` both pass on the merged wallet-harness fix.
 - Two sandbox payments reached paid ledger rows and approved Arena Entries, and
   both refunds reconciled successfully.
+- Production delivered all five application lifecycle templates through Resend
+  to the Hostinger inbox with no provider errors.
 
 ### Remaining launch gates
 
 - Send one fresh sandbox webhook event to prove the currently deployed signing
   secret matches the active endpoint.
-- Verify all application lifecycle templates through real transactional email;
-  the existing outbox rows are mocked rehearsal fixtures.
 - Establish the production database migration baseline before applying the
   immutable-results migration.
 - Complete the remaining finalization and lifecycle-email rehearsal evidence.
