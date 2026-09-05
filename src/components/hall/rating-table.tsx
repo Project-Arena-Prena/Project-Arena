@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ProjectLogo } from '@/components/project-logo';
 import { formatNumber, formatRank } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import type { Project } from '@/lib/types';
@@ -34,15 +35,18 @@ export function RatingTable({ projects }: { projects: Project[] }) {
               {formatRank(pos)}
             </span>
 
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="truncate text-[15px] font-medium tracking-tight text-bone">
-                {project.name}
+            <div className="flex min-w-0 items-center gap-3">
+              <ProjectLogo name={project.name} logoUrl={project.logoUrl} size="sm" />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate text-[15px] font-medium tracking-tight text-bone">
+                  {project.name}
+                </span>
+                <span className="label truncate md:hidden">
+                  {project.category} · {project.appearances} Arenas · {project.wins}W ·{' '}
+                  {project.podiums}P
+                </span>
+                <span className="label hidden truncate md:block">{project.category}</span>
               </span>
-              <span className="label truncate md:hidden">
-                {project.category} · {project.appearances} Arenas · {project.wins}W ·{' '}
-                {project.podiums}P
-              </span>
-              <span className="label hidden truncate md:block">{project.category}</span>
             </div>
 
             <span className="hidden num text-right text-sm text-bone-dim md:block">

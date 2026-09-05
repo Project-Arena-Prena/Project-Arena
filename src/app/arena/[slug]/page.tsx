@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
@@ -7,6 +6,7 @@ import { Countdown } from '@/components/countdown';
 import { Leaderboard } from '@/components/leaderboard';
 import { ChampionPanel } from '@/components/arena/champion-panel';
 import { EntrantGrid } from '@/components/arena/entrant-grid';
+import { ParallaxBackdrop } from '@/components/experience/parallax-backdrop';
 import { Reveal } from '@/components/reveal';
 import { TimingStrip } from '@/components/arena/timing-strip';
 import {
@@ -43,7 +43,7 @@ export async function generateMetadata({
     title: arena.name,
     description: arena.theme,
     openGraph: {
-      title: `${arena.name} — Project Arena`,
+      title: `${arena.name} | Project Arena`,
       description: arena.theme,
       type: 'website',
     },
@@ -84,15 +84,12 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="pb-20">
-      <section className="relative overflow-hidden border-b hairline bg-ink-900">
-        <Image
+      <section className="relative min-h-[470px] overflow-hidden border-b hairline bg-ink-900">
+        <ParallaxBackdrop
           src="/art/roman-arena-field.webp"
-          alt=""
-          fill
           priority
           sizes="100vw"
-          className="roman-art-drift pointer-events-none object-cover object-[66%_center] opacity-[0.58] saturate-[0.68] contrast-[1.1]"
-          aria-hidden
+          imageClassName="object-[66%_center] opacity-[0.62] saturate-[0.66] contrast-[1.12]"
         />
         <div
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#080808_0%,rgba(8,8,8,0.94)_38%,rgba(8,8,8,0.55)_70%,rgba(8,8,8,0.6)_100%),linear-gradient(0deg,#080808_0%,transparent_62%)]"
@@ -144,7 +141,7 @@ export default async function ArenaPage({ params }: { params: Promise<{ slug: st
         </Container>
       </section>
 
-      <Container className="pt-10 sm:pt-12">
+      <Container className="arena-section pt-10 sm:pt-14">
         {isCancelled ? (
           <Reveal delay={0.1}>
             <EmptyState title="Arena cancelled" hint="This Arena will not run. Entered Projects are queued for refund review." />

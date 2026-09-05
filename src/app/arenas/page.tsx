@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
+import { ParallaxBackdrop } from '@/components/experience/parallax-backdrop';
 import { CompletedArenaRow, CompletedTableHeader } from '@/components/arenas/completed-arena-row';
 import { LiveArenaPanel } from '@/components/arenas/live-arena-panel';
 import { Reveal } from '@/components/reveal';
@@ -37,15 +37,12 @@ export default async function ArenasPage() {
 
   return (
     <>
-      <section className="relative overflow-hidden border-b hairline bg-ink-900">
-        <Image
+      <section className="relative min-h-[500px] overflow-hidden border-b hairline bg-ink-900">
+        <ParallaxBackdrop
           src="/art/roman-arena-field.webp"
-          alt=""
-          fill
           priority
           sizes="100vw"
-          className="roman-art-drift pointer-events-none object-cover object-[66%_center] opacity-[0.64] saturate-[0.7] contrast-[1.08]"
-          aria-hidden
+          imageClassName="object-[66%_center] opacity-[0.68] saturate-[0.66] contrast-[1.1]"
         />
         <div
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#080808_0%,rgba(8,8,8,0.94)_34%,rgba(8,8,8,0.5)_66%,rgba(8,8,8,0.32)_100%),linear-gradient(0deg,#080808_0%,transparent_55%)]"
@@ -81,10 +78,11 @@ export default async function ArenasPage() {
                   key={cell.href}
                   href={cell.href}
                   className={cn(
-                    'flex flex-col gap-3 px-4 py-4 transition-colors duration-200 hover:bg-white/[0.025] sm:px-5 sm:py-5',
+                    'group relative flex flex-col gap-3 overflow-hidden px-4 py-4 transition-colors duration-300 hover:bg-white/[0.035] sm:px-5 sm:py-5',
                     i > 0 && 'border-l hairline',
                   )}
                 >
+                  <span className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-arena transition-transform duration-500 group-hover:scale-x-100" aria-hidden />
                   <span className="flex items-center gap-2">
                     {cell.dot ? <LiveDot /> : null}
                     <Label className={cell.dot ? 'text-live' : undefined}>{cell.label}</Label>
@@ -99,7 +97,7 @@ export default async function ArenasPage() {
         </Container>
       </section>
 
-      <section id="live" className="scroll-mt-20 border-b hairline py-14 sm:py-16">
+      <section id="live" className="arena-section scroll-mt-20 border-b hairline py-14 sm:py-20">
         <Container>
           <Reveal>
             <SectionHeader title="Live now" action={<SectionCount n={live.length} />} />
@@ -121,7 +119,7 @@ export default async function ArenasPage() {
         </Container>
       </section>
 
-      <section id="upcoming" className="scroll-mt-20 border-b hairline py-14 sm:py-16">
+      <section id="upcoming" className="arena-section scroll-mt-20 border-b hairline py-14 sm:py-20">
         <Container>
           <Reveal>
             <SectionHeader title="Upcoming" action={<SectionCount n={upcoming.length} />} />
@@ -144,7 +142,7 @@ export default async function ArenasPage() {
         </Container>
       </section>
 
-      <section id="completed" className="scroll-mt-20 py-14 sm:py-16">
+      <section id="completed" className="arena-section scroll-mt-20 py-14 sm:py-20">
         <Container>
           <Reveal>
             <SectionHeader

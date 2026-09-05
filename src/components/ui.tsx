@@ -9,7 +9,11 @@ export function Container({ className, children }: { className?: string; childre
 }
 
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn('border hairline bg-ink-900', className)}>{children}</div>;
+  return (
+    <div className={cn('border hairline bg-ink-900/90 shadow-[0_24px_70px_rgba(0,0,0,0.16)]', className)}>
+      {children}
+    </div>
+  );
 }
 
 export function Label({ className, children }: { className?: string; children: ReactNode }) {
@@ -26,11 +30,11 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const BUTTON_BASE =
-  'inline-flex items-center justify-center gap-2 border font-mono font-semibold uppercase tracking-[0.13em] transition-[transform,background-color,border-color,color,box-shadow] duration-200 hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40 disabled:hover:translate-y-0';
+  'relative isolate inline-flex items-center justify-center gap-2 overflow-hidden border font-mono font-semibold uppercase tracking-[0.13em] transition-[transform,background-color,border-color,color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] before:pointer-events-none before:absolute before:inset-y-0 before:left-[-45%] before:w-[30%] before:-skew-x-12 before:bg-white/20 before:opacity-0 before:transition-[left,opacity] before:duration-500 hover:-translate-y-0.5 hover:before:left-[125%] hover:before:opacity-100 active:translate-y-0 disabled:pointer-events-none disabled:opacity-40 disabled:hover:translate-y-0';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'border-arena bg-arena text-ink-950 hover:border-arena-hot hover:bg-arena-hot hover:shadow-[0_12px_34px_rgba(232,80,2,0.18)]',
-  secondary: 'border-white/30 bg-transparent text-bone hover:border-white/70 hover:bg-white/[0.04]',
+  primary: 'border-arena bg-arena text-ink-950 shadow-[0_0_0_rgba(232,80,2,0)] hover:border-arena-hot hover:bg-arena-hot hover:shadow-[0_14px_38px_rgba(232,80,2,0.2)]',
+  secondary: 'border-white/30 bg-ink-950/15 text-bone backdrop-blur-sm hover:border-white/70 hover:bg-white/[0.045]',
   ghost: 'border-transparent bg-transparent text-bone-dim hover:text-bone',
 };
 
@@ -186,7 +190,8 @@ export function SectionHeader({
 
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 border hairline border-dashed px-6 py-16 text-center">
+    <div className="grid-lines relative flex min-h-44 flex-col items-center justify-center gap-2 overflow-hidden border hairline border-dashed bg-ink-900/45 px-6 py-16 text-center">
+      <span className="absolute left-1/2 top-0 h-px w-1/3 -translate-x-1/2 bg-gradient-to-r from-transparent via-arena/60 to-transparent" aria-hidden />
       <p className="font-mono text-xs uppercase tracking-widest text-bone-dim">{title}</p>
       {hint ? <p className="max-w-sm text-sm text-bone-faint">{hint}</p> : null}
     </div>

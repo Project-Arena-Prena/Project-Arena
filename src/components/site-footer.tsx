@@ -5,7 +5,7 @@ import { Container } from './ui';
 const EXPLORE = [
   { href: '/arenas', label: 'Arenas' },
   { href: '/hall-of-fame', label: 'Hall of Fame' },
-  { href: '/arena/open-arena-001', label: 'Watch Live' },
+  { href: '/arenas#live', label: 'Watch Live' },
 ];
 
 const BUILDERS = [
@@ -16,9 +16,16 @@ const BUILDERS = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24">
+    <footer className="relative z-10 mt-24 overflow-hidden bg-ink-950">
       <Container>
-        <div className="flex flex-col gap-14 border-t hairline py-12 sm:flex-row sm:items-start sm:justify-between">
+        <div className="relative overflow-hidden border-t hairline pt-10" aria-hidden="true">
+          <span className="block whitespace-nowrap font-display text-[clamp(4.5rem,14vw,10.5rem)] font-semibold uppercase leading-[0.72] tracking-[-0.075em] text-white/[0.035]">
+            Project Arena
+          </span>
+          <span className="absolute left-0 top-10 h-px w-24 bg-gradient-to-r from-arena to-transparent" />
+        </div>
+
+        <div className="flex flex-col gap-14 py-12 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-sm">
             <Link href="/" className="inline-flex">
               <Image

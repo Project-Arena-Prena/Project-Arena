@@ -1,17 +1,26 @@
 'use client';
 
 import Image from 'next/image';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { ArrowDownRight } from 'lucide-react';
+import { useRef } from 'react';
 import { Container, Label } from '@/components/ui';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function RomanArtInterlude() {
+  const sectionRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start end', 'end start'],
+  });
+  const vaultY = useTransform(scrollYProgress, [0, 1], ['5%', '-5%']);
+  const victoryY = useTransform(scrollYProgress, [0, 1], ['-4%', '6%']);
+  const copyY = useTransform(scrollYProgress, [0, 1], ['3%', '-3%']);
 
   return (
-    <section className="relative overflow-hidden border-b hairline bg-[#090704] py-20 sm:py-28 lg:py-36">
+    <section ref={sectionRef} className="relative overflow-hidden border-b hairline bg-[#090704] py-20 sm:py-28 lg:py-36">
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_48%,rgba(217,195,171,0.09),transparent_38%)]"
         aria-hidden
@@ -19,10 +28,11 @@ export function RomanArtInterlude() {
       <Container className="relative">
         <div className="grid items-center gap-14 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20">
           <motion.div
-            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={reduceMotion ? false : { opacity: 0, x: -18 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, amount: 0.35 }}
             transition={{ duration: reduceMotion ? 0 : 0.65, ease: EASE }}
+            style={reduceMotion ? undefined : { y: copyY }}
           >
             <Label className="text-arena">The architecture of attention</Label>
             <h2 className="mt-5 max-w-xl text-[clamp(2.8rem,6vw,5.6rem)] font-semibold uppercase leading-[0.86] tracking-[-0.07em]">
@@ -46,6 +56,7 @@ export function RomanArtInterlude() {
               whileInView={{ opacity: 1, x: 0, rotate: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: reduceMotion ? 0 : 0.8, ease: EASE }}
+              style={reduceMotion ? undefined : { y: vaultY }}
               className="absolute inset-x-0 top-0 h-[58%] overflow-hidden border border-white/15 bg-black shadow-[0_30px_80px_rgba(0,0,0,0.45)] sm:left-[8%]"
             >
               <Image
@@ -62,10 +73,11 @@ export function RomanArtInterlude() {
             </motion.figure>
 
             <motion.figure
-              initial={reduceMotion ? false : { opacity: 0, y: 36, rotate: -1.2 }}
-              whileInView={{ opacity: 1, y: 0, rotate: 0 }}
+              initial={reduceMotion ? false : { opacity: 0, x: -18, rotate: -1.2 }}
+              whileInView={{ opacity: 1, x: 0, rotate: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: reduceMotion ? 0 : 0.85, delay: reduceMotion ? 0 : 0.12, ease: EASE }}
+              style={reduceMotion ? undefined : { y: victoryY }}
               className="absolute bottom-0 right-[4%] h-[62%] w-[44%] overflow-hidden border border-white/15 bg-[#b9a17d] shadow-[0_30px_80px_rgba(0,0,0,0.55)] sm:right-[2%] sm:w-[39%]"
             >
               <Image

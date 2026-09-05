@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { ProjectLogo } from '@/components/project-logo';
 import { Label } from '@/components/ui';
 import { formatDate, formatNumber, formatRank } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -51,27 +52,30 @@ export function ChampionRow({ result, featured = false }: { result: ArenaResult;
           </span>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-3">
-          <h3
-            className={cn(
-              'font-semibold tracking-headline',
-              featured ? 'text-4xl sm:text-5xl' : 'text-2xl sm:text-3xl',
-            )}
-          >
-            <Link
-              href={`/project/${project.slug}`}
-              className="text-bone transition-colors duration-200 hover:text-arena"
+        <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+          <ProjectLogo name={project.name} logoUrl={project.logoUrl} size={featured ? 'lg' : 'md'} />
+          <div className="min-w-0 flex-1">
+            <h3
+              className={cn(
+                'font-semibold tracking-headline',
+                featured ? 'text-4xl sm:text-5xl' : 'text-2xl sm:text-3xl',
+              )}
             >
-              {project.name}
-            </Link>
-          </h3>
-          <p className="max-w-xl text-sm leading-relaxed text-bone-dim">{project.tagline}</p>
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-0.5">
-            <Label>{project.category}</Label>
-            <span className="text-bone-faint/50" aria-hidden>
-              /
-            </span>
-            <Label>@{project.builder.handle}</Label>
+              <Link
+                href={`/project/${project.slug}`}
+                className="text-bone transition-colors duration-200 hover:text-arena"
+              >
+                {project.name}
+              </Link>
+            </h3>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-bone-dim">{project.tagline}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <Label>{project.category}</Label>
+              <span className="text-bone-faint/50" aria-hidden>
+                /
+              </span>
+              <Label>@{project.builder.handle}</Label>
+            </div>
           </div>
         </div>
 

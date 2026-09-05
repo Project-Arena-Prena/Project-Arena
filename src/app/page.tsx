@@ -14,8 +14,8 @@ import {
 import { Countdown } from '@/components/countdown';
 import { Leaderboard } from '@/components/leaderboard';
 import { Reveal } from '@/components/reveal';
+import { CinematicHomeHero } from '@/components/home/cinematic-home-hero';
 import { RomanArtInterlude } from '@/components/home/roman-art-interlude';
-import { RomanHeroBackdrop } from '@/components/home/roman-hero-backdrop';
 import {
   ButtonLink,
   Container,
@@ -31,7 +31,7 @@ import { formatCompact, formatMoney, formatNumber, pad2 } from '@/lib/format';
 import { getArenas, getLiveArena, getStandings } from '@/lib/queries';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Project Arena — Where projects compete for attention' },
+  title: { absolute: 'Project Arena | Where projects compete for attention' },
   description:
     'Discover projects competing for attention, support the ones you believe in, or enter your own.',
 };
@@ -84,104 +84,56 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="relative flex min-h-svh items-end overflow-hidden border-b hairline bg-black py-28 sm:min-h-[860px] sm:py-32">
-        <RomanHeroBackdrop />
+      <CinematicHomeHero
+        arena={
+          arena
+            ? {
+                slug: arena.slug,
+                name: arena.name,
+                endsAt: arena.endsAt,
+                entrantCount: arena.entrantCount,
+              }
+            : null
+        }
+        standings={standings.map((standing) => ({
+          rank: standing.rank,
+          slug: standing.project.slug,
+          name: standing.project.name,
+          category: standing.project.category,
+          logoUrl: standing.project.logoUrl,
+          score: standing.score,
+          share: standing.share,
+          momentum: standing.momentum,
+        }))}
+      />
 
-        <div className="absolute right-5 top-24 z-10 hidden items-center gap-3 font-mono text-[8px] uppercase tracking-[0.2em] text-white/45 sm:flex lg:right-8">
-          <span>Field I</span>
-          <span className="h-px w-12 bg-white/30" aria-hidden />
-          <span>Public competition</span>
-        </div>
-
-        <Container className="relative z-10 pb-16 sm:pb-20">
-          <Reveal>
-            <div className="mb-6 flex items-center gap-4 sm:mb-8">
-              <Image
-                src="/project-arena-logo.png"
-                alt="Project Arena"
-                width={1536}
-                height={1024}
-                sizes="(min-width: 640px) 144px, 120px"
-                className="h-20 w-auto object-contain brightness-0 invert sm:h-24"
-              />
-              <span className="h-px w-12 bg-white/40" aria-hidden />
-            </div>
-          </Reveal>
-
-          <Reveal delay={0.04}>
-            <h1 className="max-w-[1040px] text-[clamp(3.2rem,10vw,8.1rem)] font-bold uppercase leading-[0.82] tracking-[-0.075em] text-bone">
-              <span className="block">The internet</span>
-              <span className="block">is building.</span>
-              <span className="block text-arena">See what&apos;s winning.</span>
-            </h1>
-          </Reveal>
-
-          <Reveal delay={0.08}>
-            <p className="mt-7 max-w-xl text-sm leading-relaxed text-bone sm:mt-8 sm:text-[17px]">
-              Discover projects competing for attention, support the ones you believe in, or enter
-              your own.
-            </p>
-          </Reveal>
-
-          <Reveal delay={0.12}>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink
-                href={arena ? `/arena/${arena.slug}` : '/arenas'}
-                size="lg"
-                className="group w-full sm:w-auto"
-              >
-                <Radio className="h-4 w-4" /> Watch live
-              </ButtonLink>
-              <ButtonLink
-                href="/enter"
-                variant="secondary"
-                size="lg"
-                className="group w-full border-white/60 bg-black/30 sm:w-auto"
-              >
-                Enter the Arena
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </ButtonLink>
-            </div>
-          </Reveal>
-        </Container>
-
-        <Container className="absolute inset-x-0 bottom-5 z-10 sm:bottom-6">
-          <div className="grid min-h-14 grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 border-y border-white/25 py-2 font-mono text-[8px] uppercase tracking-[0.14em] text-white/70 sm:grid-cols-[1fr_1fr_auto] sm:px-4 sm:text-[9px]">
-            <span className="inline-flex items-center gap-2">
-              <LiveDot /> Gate open · {arena?.name ?? 'Next Arena'}
-            </span>
-            <span className="col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto">
-              {arena ? `${arena.entrantCount} projects · 48 hours · one champion` : 'Registration is open'}
-            </span>
-            <Link
-              href={arena ? `/arena/${arena.slug}` : '/arenas'}
-              className="col-start-2 row-start-1 inline-flex items-center gap-2 font-bold text-bone sm:col-start-auto"
-            >
-              <span className="hidden sm:inline">Enter race control</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </Container>
-      </section>
-
-      <section className="border-b hairline py-20 sm:py-28 lg:py-32">
-        <Container>
+      <section className="arena-section relative overflow-hidden border-b hairline py-20 sm:py-28 lg:py-32">
+        <Image
+          src="/art/roman-arena-field.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          className="pointer-events-none object-cover object-[74%_center] opacity-[0.075] saturate-[0.55]"
+          aria-hidden
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/95 to-ink-950/65" aria-hidden />
+        <Container className="relative">
           <Reveal className="flex flex-col gap-9 sm:flex-row sm:items-end sm:justify-between sm:gap-16">
             <div>
               <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-arena">
-                <LiveDot /> Live now
+                <LiveDot /> {arena ? 'Live now' : 'Next gate'}
               </div>
               <h2 className="mt-4 text-[clamp(3.4rem,8vw,6.2rem)] font-semibold uppercase leading-[0.85] tracking-[-0.07em]">
-                {arena ? arena.name : 'The next Arena'}
+                {arena ? arena.name : upcoming[0]?.name ?? 'The next Arena'}
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-bone-dim sm:text-base">
-                {arena?.theme ?? 'The next competitive field is forming now.'}
+                {arena?.theme ?? upcoming[0]?.theme ?? 'The next competitive field is forming now.'}
               </p>
             </div>
-            {arena ? (
+            {arena || upcoming[0] ? (
               <div className="min-w-0 border-t hairline pt-5 sm:min-w-[330px] sm:border-l sm:border-t-0 sm:pb-2 sm:pl-8 sm:pt-0">
-                <Label>Ends in</Label>
-                <Countdown target={arena.endsAt} size="lg" className="mt-4" />
+                <Label>{arena ? 'Ends in' : 'Starts in'}</Label>
+                <Countdown target={arena?.endsAt ?? upcoming[0].startsAt} size="lg" showDays={!arena} className="mt-4" />
               </div>
             ) : null}
           </Reveal>
@@ -235,6 +187,33 @@ export default async function HomePage() {
                 </Panel>
               </Reveal>
             </>
+          ) : upcoming[0] ? (
+            <Reveal delay={0.08} direction="scale">
+              <Panel className="group relative mt-10 overflow-hidden border-white/25 bg-ink-900/70 p-6 sm:p-8">
+                <div className="grid-lines pointer-events-none absolute inset-0 opacity-25" aria-hidden />
+                <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-arena shadow-[0_0_28px_rgba(232,80,2,0.32)]" aria-hidden />
+                <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+                  <div className="max-w-2xl">
+                    <Label>Registration is open</Label>
+                    <p className="mt-5 text-2xl font-semibold tracking-tight text-bone sm:text-4xl">
+                      {upcoming[0].entrantCount} projects have taken the field.{' '}
+                      <span className="text-bone-dim">
+                        {Math.max(0, upcoming[0].entrantCap - upcoming[0].entrantCount)} places remain.
+                      </span>
+                    </p>
+                    <div className="mt-7 h-px overflow-hidden bg-white/10">
+                      <span
+                        className="block h-full bg-gradient-to-r from-arena to-gold transition-[width] duration-1000"
+                        style={{ width: `${Math.min(100, (upcoming[0].entrantCount / upcoming[0].entrantCap) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <ButtonLink href={`/enter?arena=${upcoming[0].slug}`} size="lg" className="w-full shrink-0 lg:w-auto">
+                    Take a place <ArrowRight className="h-4 w-4" />
+                  </ButtonLink>
+                </div>
+              </Panel>
+            </Reveal>
           ) : (
             <EmptyState title="No live Arena" hint="Browse the upcoming calendar and take a place on the next grid." />
           )}
@@ -260,7 +239,7 @@ export default async function HomePage() {
 
       <RomanArtInterlude />
 
-      <section className="border-b hairline bg-ink-900 py-20 sm:py-28 lg:py-32">
+      <section className="arena-section border-b hairline bg-ink-900/80 py-20 sm:py-28 lg:py-32">
         <Container>
           <Reveal>
             <Label>How it works</Label>
@@ -275,13 +254,22 @@ export default async function HomePage() {
             {STEPS.map((step, index) => {
               const Icon = step.icon;
               return (
-                <Reveal key={step.number} delay={index * 0.05} className="h-full">
+                <Reveal
+                  key={step.number}
+                  delay={index * 0.055}
+                  direction={index === 0 ? 'left' : index === 2 ? 'right' : 'up'}
+                  className="h-full"
+                >
                   <article
                     className={cn(
-                      'group flex min-h-[280px] flex-col p-6 transition-[transform,background-color] hover:-translate-y-1 hover:bg-[#110602] sm:p-8',
+                      'group relative flex min-h-[300px] flex-col overflow-hidden p-6 transition-[transform,background-color,border-color] duration-500 hover:-translate-y-1.5 hover:bg-[#130b07] sm:p-8',
                       index > 0 && 'border-t hairline md:border-l md:border-t-0',
                     )}
                   >
+                    <span className="pointer-events-none absolute -right-3 -top-8 font-display text-[9rem] font-semibold leading-none text-white/[0.018] transition-colors duration-500 group-hover:text-arena/[0.045]" aria-hidden>
+                      {step.number}
+                    </span>
+                    <span className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-gradient-to-r from-arena to-transparent transition-transform duration-700 group-hover:scale-x-100" aria-hidden />
                     <div className="flex items-center justify-between font-mono text-bone-faint transition-colors group-hover:text-arena">
                       <span>{step.number}</span>
                       <Icon className="h-5 w-5" aria-hidden />
@@ -296,12 +284,12 @@ export default async function HomePage() {
             })}
           </div>
           <p className="mt-5 border-l-2 border-arena pl-4 text-xs leading-relaxed text-bone-dim">
-            Entry buys a place in the competition—not a higher rank. The field decides what wins.
+            Entry buys a place in the competition, not a higher rank. The field decides what wins.
           </p>
         </Container>
       </section>
 
-      <section className="border-b hairline py-20 sm:py-28">
+      <section className="arena-section border-b hairline py-20 sm:py-28">
         <Container>
           <SectionHeader
             eyebrow="Registration open"
@@ -370,7 +358,7 @@ export default async function HomePage() {
         </Container>
       </section>
 
-      <section className="relative overflow-hidden border-b hairline py-24 text-center sm:py-36">
+      <section className="arena-section relative overflow-hidden border-b hairline py-24 text-center sm:py-36">
         <Image
           src="/art/roman-victory.webp"
           alt=""

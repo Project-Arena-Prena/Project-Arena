@@ -3,8 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  --font-display: 'Arial Narrow', 'Aptos Display', 'Franklin Gothic Medium', ui-sans-serif, sans-serif;
+  --font-sans: 'Aptos', 'Helvetica Neue', Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', 'Cascadia Code', 'Menlo', monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: dark;
 }
 
@@ -13,11 +16,23 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
+    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   body {
-    @apply overflow-x-hidden bg-ink-950 text-bone font-sans antialiased;
-    background-image: linear-gradient(to bottom, #000, #000);
+    @apply bg-ink-950 text-bone font-sans antialiased;
+    overflow-x: hidden;
+    overflow-x: clip;
+    background:
+      radial-gradient(circle at 72% 8%, rgba(232, 80, 2, 0.035), transparent 28rem),
+      #050403;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
   }
 
   ::selection {
@@ -30,6 +45,11 @@
 
   table {
     font-variant-numeric: tabular-nums;
+  }
+
+  a,
+  button {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -57,10 +77,108 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
   }
 
+  .arena-section {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .arena-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(circle at 82% 28%, rgba(205, 181, 142, 0.035), transparent 28rem);
+  }
+
+  .cinematic-hero {
+    min-height: 100svh;
+    background: #050403;
+  }
+
+  .cinematic-hero__stage {
+    min-height: 100svh;
+  }
+
+  .skip-link {
+    @apply fixed left-4 top-3 z-[100] -translate-y-20 bg-arena px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-ink-950 transition-transform;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
+  .arena-environment {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: #050403;
+  }
+
+  .arena-environment__glow,
+  .arena-environment__grid,
+  .arena-environment__grain {
+    position: absolute;
+    inset: -12%;
+  }
+
+  .arena-environment__glow {
+    border-radius: 50%;
+    filter: blur(100px);
+    animation: environmentDrift 72s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .arena-environment__glow--one {
+    left: 52%;
+    top: -26%;
+    width: 62vw;
+    height: 62vw;
+    background: rgba(232, 80, 2, 0.025);
+  }
+
+  .arena-environment__glow--two {
+    left: -24%;
+    top: 48%;
+    width: 54vw;
+    height: 54vw;
+    animation-delay: -31s;
+    background: rgba(205, 181, 142, 0.025);
+  }
+
+  .arena-environment__grid {
+    opacity: 0.13;
+    background-image:
+      linear-gradient(to right, rgba(242, 238, 231, 0.025) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(242, 238, 231, 0.02) 1px, transparent 1px);
+    background-size: 96px 96px;
+    mask-image: radial-gradient(circle at center, black, transparent 78%);
+  }
+
+  .arena-environment__grain {
+    opacity: 0.018;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+    animation: grainShift 9s steps(2, end) infinite;
+  }
+
   .roman-art-drift {
     animation: roman-art-drift 24s ease-in-out infinite;
     transform-origin: 65% 50%;
     will-change: transform;
+  }
+}
+
+@media (min-width: 768px) {
+  .cinematic-hero {
+    height: 235svh;
+  }
+
+  .cinematic-hero__stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
   }
 }
 
@@ -75,6 +193,36 @@
   }
 }
 
+@keyframes environmentDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(3%, -2%, 0) scale(1.06);
+  }
+}
+
+@keyframes grainShift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  25% {
+    transform: translate3d(1.5%, -1%, 0);
+  }
+
+  50% {
+    transform: translate3d(-1%, 1.5%, 0);
+  }
+
+  75% {
+    transform: translate3d(1%, 0.5%, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -86,5 +234,18 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .cinematic-hero {
+    height: auto;
+  }
+
+  .cinematic-hero__stage {
+    position: relative;
+  }
+
+  .arena-environment__glow,
+  .arena-environment__grain {
+    animation: none !important;
   }
 }
