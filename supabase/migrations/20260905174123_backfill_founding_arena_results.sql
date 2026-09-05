@@ -49,3 +49,4 @@ revoke all on function public.capture_arena_lifecycle_event() from public, anon,
 revoke all on function public.capture_arena_results() from public, anon, authenticated;
 revoke all on function public.prevent_arena_result_mutation() from public, anon, authenticated;
 revoke all on function public.guard_entry_approval_window() from public, anon, authenticated;
+
