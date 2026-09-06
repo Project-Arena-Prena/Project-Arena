@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Check } from 'lucide-react';
 import { Countdown } from '@/components/countdown';
 import { Button, ButtonLink, EmptyState, Label, Panel, StatusBadge } from '@/components/ui';
 import { cn } from '@/lib/cn';
@@ -19,11 +19,13 @@ const API_ERRORS: Record<string, string> = {
 
 export function EntryFlow({
   arenas,
+  serverNow,
   projects,
   initialArenaSlug,
   initialProjectId,
 }: {
   arenas: Arena[];
+  serverNow?: number;
   projects: Project[];
   initialArenaSlug?: string;
   initialProjectId?: string;
@@ -82,10 +84,16 @@ export function EntryFlow({
   }
 
   return (
+    <div>
+    <ol className="entry-progress" aria-label="Entry progress">
+      <li><Check size={14} aria-hidden="true" />Account ready</li>
+      <li>{project ? <Check size={14} aria-hidden="true" /> : null}{project ? 'Project selected' : 'Choose a Project'}</li>
+      <li aria-current="step">Review &amp; submit</li>
+    </ol>
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="flex flex-col gap-10">
         <section className="flex flex-col gap-4">
-          <Label>Select Project</Label>
+          <Label>01 / Project</Label>
           <div className="border border-white/30 bg-ink-900">
             {projects.map((item) => {
               const active = item.id === projectId;
@@ -94,6 +102,7 @@ export function EntryFlow({
                   key={item.id}
                   type="button"
                   onClick={() => setProjectId(item.id)}
+                  aria-pressed={active}
                   className={cn(
                     'flex w-full items-center justify-between border-b hairline px-4 py-4 text-left last:border-b-0',
                     active ? 'bg-[#110602]' : 'hover:bg-white/[0.03]',
@@ -118,7 +127,7 @@ export function EntryFlow({
         </section>
 
         <section className="flex flex-col gap-4">
-          <Label>Arena</Label>
+          <Label>02 / Competition</Label>
           <div className="border border-white/30 bg-ink-900">
             {arenas.map((arena) => {
               const active = arena.slug === arenaSlug;
@@ -129,6 +138,7 @@ export function EntryFlow({
                   type="button"
                   disabled={atCap}
                   onClick={() => setArenaSlug(arena.slug)}
+                  aria-pressed={active}
                   className={cn(
                     'flex w-full flex-col gap-1 border-b hairline px-4 py-4 text-left last:border-b-0 sm:flex-row sm:items-center sm:justify-between',
                     active ? 'bg-[#110602]' : 'hover:bg-white/[0.03]',
@@ -147,7 +157,7 @@ export function EntryFlow({
         </section>
 
         {error ? (
-          <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-arena">
+          <p role="alert" className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-arena">
             <AlertCircle className="h-3.5 w-3.5" />
             {error}
           </p>
@@ -155,17 +165,18 @@ export function EntryFlow({
 
       </div>
 
-      <div className="lg:sticky lg:top-24">
+      <div className="lg:sticky lg:top-24 lg:self-start">
         {selected ? (
           <Panel className="relative overflow-hidden border-white/30">
             <span className="absolute inset-y-0 left-0 w-1 bg-arena" aria-hidden />
             <div className="flex items-center justify-between border-b hairline px-4 py-3">
-              <Label>Entry</Label>
+              <Label>03 / Review entry</Label>
               <StatusBadge status={selected.status} />
             </div>
             <div className="px-4 py-4">
               <h2 className="text-2xl font-semibold uppercase leading-none tracking-[-0.045em]">{selected.name}</h2>
               <p className="mt-2 text-xs text-bone-dim">{selected.theme}</p>
+              <p className="mt-4 text-sm leading-relaxed text-bone-dim">Entering submits your Project for review. Acceptance is confirmed separately. Entry never buys score or rank.</p>
               {selected.eligibilityText ? (
                 <p className="mt-3 text-xs text-bone-faint">{selected.eligibilityText}</p>
               ) : null}
@@ -216,7 +227,7 @@ export function EntryFlow({
             <div className="px-4 py-4">
               <Label>Starts in</Label>
               <div className="mt-2">
-                <Countdown target={selected.startsAt} size="sm" showDays />
+                <Countdown target={selected.startsAt} serverNow={serverNow} size="sm" showDays />
               </div>
             </div>
             {project ? (
@@ -228,6 +239,7 @@ export function EntryFlow({
           </Panel>
         ) : null}
       </div>
+    </div>
     </div>
   );
 }

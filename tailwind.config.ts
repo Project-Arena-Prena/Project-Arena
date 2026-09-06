@@ -16,7 +16,7 @@ const config: Config = {
         bone: {
           DEFAULT: '#F9F9F9',
           dim: '#A7A7A7',
-          faint: '#646464',
+          faint: '#91918C',
         },
         arena: { DEFAULT: '#E85002', hot: '#F16001' },
         live: '#F16001',

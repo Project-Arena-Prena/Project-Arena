@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getBuilder } from '@/lib/auth';
 import { trackEvent } from '@/lib/analytics';
 import { reconcileArenas } from '@/lib/arena-lifecycle';
+import { foundingPhase } from '@/lib/founding';
 import { getArena } from '@/lib/queries';
 import { checkoutIntegrationId, siteUrl, stripe } from '@/lib/stripe';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
   const arena = await getArena(parsed.data.arenaSlug);
   if (!arena) return NextResponse.json({ error: 'arena_not_found' }, { status: 404 });
   if (arena.status === 'full') return NextResponse.json({ error: 'arena_full' }, { status: 409 });
-  if (arena.status !== 'registration') return NextResponse.json({ error: 'arena_closed' }, { status: 409 });
+  if (foundingPhase(arena, Date.now()) !== 'open') return NextResponse.json({ error: 'arena_closed' }, { status: 409 });
   if (arena.entrantCount >= arena.entrantCap) {
     return NextResponse.json({ error: 'arena_full' }, { status: 409 });
   }
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
 
   const supabase = createAdminClient();
   if (!supabase) {
-    return NextResponse.json({ url: `/enter/success?arena=${arena.slug}`, free: true });
+    return NextResponse.json({ error: 'entry_unavailable' }, { status: 503 });
   }
 
   const { data, error } = await supabase.rpc('start_checkout_entry', {

@@ -100,6 +100,8 @@ export interface Arena {
   theme: string;
   category: string;
   status: ArenaStatus;
+  lifecyclePhase?: string | null;
+  acceptedCount?: number;
   startsAt: string;
   endsAt: string;
   registrationOpensAt: string | null;

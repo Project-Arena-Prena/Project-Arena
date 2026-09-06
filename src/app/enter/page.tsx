@@ -6,7 +6,9 @@ import { Container, Label } from '@/components/ui';
 import { getSessionUser } from '@/lib/supabase/server';
 import { getBuilder } from '@/lib/auth';
 import { getOwnedProjects } from '@/lib/builder-queries';
-import { getArenas } from '@/lib/queries';
+import { getArena } from '@/lib/queries';
+import { foundingPhase } from '@/lib/founding';
+import { getServerNow } from '@/lib/server-clock';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,14 +25,18 @@ export default async function EnterPage({
   const user = await getSessionUser();
   const { arena, project, canceled } = await searchParams;
   if (!user) {
-    const next = `/enter${arena ? `?arena=${arena}` : ''}`;
+    const query = new URLSearchParams();
+    if (arena) query.set('arena', arena);
+    if (project) query.set('project', project);
+    const next = '/enter' + (query.size ? '?' + query.toString() : '');
     redirect(`/login?next=${encodeURIComponent(next)}`);
   }
 
   const ctx = await getBuilder();
   const owned = ctx ? await getOwnedProjects(ctx.builder.id) : [];
-  const { live, upcoming } = await getArenas();
-  const selectable = [...upcoming.filter((item) => item.status === 'registration'), ...live.filter((item) => item.status === 'registration')];
+  const founding = await getArena('founding');
+  const now = await getServerNow();
+  const selectable = founding && foundingPhase(founding, now) === 'open' ? [founding] : [];
 
   return (
     <div className="pb-20">
@@ -64,6 +70,7 @@ export default async function EnterPage({
         <div className="min-w-0">
           <EntryFlow
             arenas={selectable}
+            serverNow={now}
             projects={owned.map((item) => item.project)}
             initialArenaSlug={arena}
             initialProjectId={project}

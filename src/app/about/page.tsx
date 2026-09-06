@@ -1,0 +1,5 @@
+import { Container, ButtonLink } from '@/components/ui';
+export const metadata = { title: 'About', alternates: { canonical: '/about' } };
+export default function AboutPage() {
+  return <Container className="founding-section"><p className="founding-eyebrow">Project Arena</p><h1 className="statement mt-6">Good work deserves<br /><em>an audience.</em></h1><p className="founding-copy mt-8 max-w-2xl">Project Arena brings internet Projects into time-limited competitions. Discover the work, explore what interests you, support Projects you believe in, and follow the field.</p><div className="event-principles"><div><h2>Participation is bought. Rank is earned.</h2><p>Entry gives a Project a place in the competition after review. Money never buys Arena Score, rank, Champion status, or Arena Rating.</p></div><div><h2>The beginning is the Founding Arena.</h2><p>We are starting with one field. Confirmed dates, entry terms and the competition record belong to the event page.</p></div></div><ButtonLink className="mt-10" href="/arena/founding">Explore the Founding Arena</ButtonLink></Container>;
+}

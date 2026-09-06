@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { Container } from './ui';
 
 const EXPLORE = [
-  { href: '/arenas', label: 'Arenas' },
-  { href: '/hall-of-fame', label: 'Hall of Fame' },
-  { href: '/arena/open-arena-001', label: 'Watch Live' },
+  { href: '/arena/founding', label: 'Founding Event' },
+  { href: '/rankings', label: 'Rankings' },
+  { href: '/about', label: 'About' },
 ];
 
 const BUILDERS = [

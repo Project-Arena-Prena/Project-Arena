@@ -37,7 +37,7 @@ export async function proxy(request: NextRequest) {
   // browser suite test a permanent 404 page.
   const devHarnessBlocked =
     process.env.NODE_ENV === 'production' &&
-    (path === '/dev-wallet-harness' || path.startsWith('/dev-wallet-harness/'));
+    ['/dev-wallet-harness', '/dev-founding-harness'].some((prefix) => path === prefix || path.startsWith(prefix + '/'));
 
   if (phaseTwoBlocked || devHarnessBlocked) {
     return new NextResponse('Not Found', { status: 404 });
@@ -87,7 +87,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/cron/reconcile|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/cron/reconcile|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico|woff2?)$).*)',
   ],
 };
 
