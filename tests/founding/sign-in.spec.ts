@@ -13,6 +13,10 @@ test('sign-in dialog traps focus, closes with Escape and restores the trigger', 
     await page.keyboard.press('Tab');
     expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   }
+  for (let index = 0; index < 8; index++) {
+    await page.keyboard.press('Shift+Tab');
+    expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+  }
   await testInfo.attach('sign-in-desktop', { body: await page.screenshot(), contentType: 'image/png' });
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);

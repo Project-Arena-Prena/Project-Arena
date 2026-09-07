@@ -20,7 +20,14 @@ export default function SignInDialog({ onClose }: { onClose: () => void }) {
       previousFocus?.focus({ preventScroll: true });
     };
   }, []);
-  return createPortal(<dialog ref={ref} className="sign-in-dialog" aria-labelledby="sign-in-title" onCancel={(event) => { event.preventDefault(); onClose(); }} onClick={(event) => {
+  return createPortal(<dialog ref={ref} className="sign-in-dialog" aria-labelledby="sign-in-title" onKeyDown={(event) => {
+    if (event.key !== 'Tab') return;
+    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), [tabindex="0"]')).filter((element) => element.getClientRects().length > 0);
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }} onCancel={(event) => { event.preventDefault(); onClose(); }} onClick={(event) => {
     if (event.target !== event.currentTarget) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
