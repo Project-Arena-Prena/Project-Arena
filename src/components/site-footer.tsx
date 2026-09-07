@@ -2,10 +2,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Container } from './ui';
 
+import { ContactLinks } from './contact-links';
+
 const EXPLORE = [
-  { href: '/arenas', label: 'Arenas' },
-  { href: '/hall-of-fame', label: 'Hall of Fame' },
-  { href: '/arena/open-arena-001', label: 'Watch Live' },
+  { href: '/arena/founding', label: 'Founding Event' },
+  { href: '/rankings', label: 'Rankings' },
+  { href: '/about', label: 'About' },
 ];
 
 const BUILDERS = [
@@ -32,7 +34,7 @@ export function SiteFooter() {
             </Link>
             <p className="mt-5 text-sm leading-relaxed text-bone-dim">
               Where projects compete for attention.
-            </p>
+            </p><ContactLinks />
           </div>
 
           <div className="grid grid-cols-2 gap-16 sm:gap-24">

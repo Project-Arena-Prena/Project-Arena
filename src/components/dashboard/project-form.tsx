@@ -1,17 +1,24 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Label } from '@/components/ui';
 import { ProjectLogo } from '@/components/project-logo';
 import { PROJECT_CATEGORIES, type Project, type ProjectCategory } from '@/lib/types';
 import { cn } from '@/lib/cn';
+import { clearProjectPreview, parseProjectPreview, readProjectPreview, serverProjectPreview, subscribeProjectPreview } from '@/lib/project-preview-draft';
+import { useHydrated } from '@/lib/use-hydrated';
 
 const INPUT =
   'h-11 w-full border hairline bg-transparent px-3 text-sm text-bone placeholder:text-bone-faint';
 
 export function ProjectForm({ project }: { project?: Project }) {
   const router = useRouter();
+  const hydrated = useHydrated();
+  const formRef = useRef<HTMLFormElement>(null);
+  const savedPreview = useSyncExternalStore(subscribeProjectPreview, readProjectPreview, serverProjectPreview);
+  const draft = project ? null : parseProjectPreview(savedPreview);
+  const [previewApplied, setPreviewApplied] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState<ProjectCategory>(project?.category ?? 'Other');
@@ -19,8 +26,19 @@ export function ProjectForm({ project }: { project?: Project }) {
   const [logoUrl, setLogoUrl] = useState(project?.logoUrl ?? '');
   const [logoPending, setLogoPending] = useState(false);
 
+  function applyPreview() {
+    if (!draft || !formRef.current) return;
+    for (const [key, value] of [['name', draft.name], ['tagline', draft.tagline]]) {
+      const field = formRef.current.elements.namedItem(key);
+      if (field instanceof HTMLInputElement) field.value = value;
+    }
+    setProjectName(draft.name);
+    setPreviewApplied(true);
+  }
+
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending || logoPending) return;
     const form = new FormData(event.currentTarget);
     setPending(true);
     setError(null);
@@ -36,23 +54,44 @@ export function ProjectForm({ project }: { project?: Project }) {
       githubUrl: String(form.get('githubUrl') ?? ''),
     };
     const url = project ? `/api/projects/${project.id}` : '/api/projects';
-    const response = await fetch(url, {
-      method: project ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const payload = (await response.json().catch(() => null)) as { id?: string; error?: string } | null;
-    setPending(false);
-    if (!response.ok) {
-      setError(payload?.error ?? 'Could not save Project');
-      return;
+    try {
+      const response = await fetch(url, {
+        method: project ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const payload = (await response.json().catch(() => null)) as { id?: string; error?: string } | null;
+      if (!response.ok) {
+        setError(payload?.error ?? 'Could not save Project');
+        return;
+      }
+      if (!project && !payload?.id) {
+        setError('Could not confirm the saved Project. Please try again.');
+        return;
+      }
+      if (previewApplied) clearProjectPreview();
+      router.push(project ? `/dashboard/projects/${project.id}` : `/dashboard/projects/${payload?.id}`);
+      router.refresh();
+    } catch {
+      setError('Could not reach Project Arena. Your details are still here. Try again.');
+    } finally {
+      setPending(false);
     }
-    router.push(project ? `/dashboard/projects/${project.id}` : `/dashboard/projects/${payload?.id}`);
-    router.refresh();
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-5">
+      {draft && !previewApplied ? (
+        <aside className="border border-white/30 bg-ink-900 p-5" aria-label="Saved Project preview">
+          <p className="text-sm">Your preview is ready: <strong className="break-words">{draft.name}</strong></p>
+          <p className="mt-2 text-xs leading-relaxed text-bone-dim">Use its name and tagline here, then review your details before publishing.</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button type="button" variant="secondary" onClick={applyPreview}>Use your preview</Button>
+            <Button type="button" variant="ghost" onClick={clearProjectPreview}>Discard preview</Button>
+          </div>
+        </aside>
+      ) : null}
+      {previewApplied ? <p role="status" className="text-sm text-bone-dim">Name and tagline added. Review them and add your website to continue.</p> : null}
       <Field label="Name">
         <input
           name="name"
@@ -63,8 +102,8 @@ export function ProjectForm({ project }: { project?: Project }) {
           className={INPUT}
         />
       </Field>
-      <Field label="Slug" hint="Unique URL">
-        <input name="slug" defaultValue={project?.slug} className={cn(INPUT, 'font-mono text-[13px]')} />
+      <Field label="Slug" hint="Optional; made from your name">
+        <input name="slug" defaultValue={project?.slug} placeholder="Created from your Project name" className={cn(INPUT, 'font-mono text-[13px]')} />
       </Field>
       <Field label="Tagline">
         <input name="tagline" required maxLength={140} defaultValue={project?.tagline} className={INPUT} />
@@ -89,6 +128,7 @@ export function ProjectForm({ project }: { project?: Project }) {
               key={item}
               type="button"
               onClick={() => setCategory(item)}
+              aria-pressed={category === item}
               className={cn(
                 'h-8 border px-3 font-mono text-[10px] uppercase tracking-widest',
                 category === item ? 'border-arena/50 bg-arena/10 text-arena' : 'border-white/15 text-bone-dim',
@@ -114,8 +154,8 @@ export function ProjectForm({ project }: { project?: Project }) {
           <input name="githubUrl" type="url" defaultValue={project?.githubUrl ?? ''} className={cn(INPUT, 'font-mono text-[13px]')} />
         </Field>
       </div>
-      {error ? <p className="font-mono text-[10px] uppercase tracking-widest text-arena">{error}</p> : null}
-      <Button type="submit" size="lg" disabled={pending || logoPending} className="w-full sm:w-auto">
+      {error ? <p role="alert" className="font-mono text-[10px] uppercase tracking-widest text-arena">{error}</p> : null}
+      <Button type="submit" size="lg" disabled={!hydrated || pending || logoPending} className="w-full sm:w-auto">
         {logoPending ? 'Uploading logo' : pending ? 'Saving' : project ? 'Save Project' : 'Create Project'}
       </Button>
     </form>
@@ -241,12 +281,12 @@ function LogoUpload({
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-baseline justify-between">
+    <label className="flex flex-col gap-2">
+      <span className="flex items-baseline justify-between">
         <Label>{label}</Label>
         {hint ? <span className="num text-[10px] text-bone-faint">{hint}</span> : null}
-      </div>
+      </span>
       {children}
-    </div>
+    </label>
   );
 }

@@ -15,7 +15,13 @@
     "dry-run": "tsx scripts/dry-run-clock.ts",
     "dry-run:arena": "tsx scripts/dry-run-arena.ts",
     "dry-run:prena": "tsx scripts/dry-run-prena.ts",
-    "test:wallet": "playwright test"
+    "test:wallet": "playwright test",
+    "test:founding": "playwright test -c playwright.founding.config.ts",
+    "test:founding-state": "tsx --test tests/founding/phase.test.ts",
+    "prepare:art": "node scripts/prepare-page-art.mjs",
+    "predev": "npm run prepare:art",
+    "prebuild": "npm run prepare:art",
+    "pretest:founding": "npm run prepare:art"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

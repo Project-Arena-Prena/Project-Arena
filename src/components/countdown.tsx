@@ -13,29 +13,31 @@ const VALUE_SIZE: Record<Size, string> = {
 };
 
 /**
- * Renders 00 on the server and hydrates to the real remaining time, so the
- * first paint can never mismatch.
+ * A supplied server clock keeps the first paint truthful and hydration stable.
  */
 export function Countdown({
   target,
+  serverNow,
   size = 'md',
   showDays,
   className,
   onComplete,
 }: {
   target: string;
+  serverNow?: number;
   size?: Size;
   showDays?: boolean;
   className?: string;
   onComplete?: () => void;
 }) {
-  const [now, setNow] = useState<number | null>(null);
+  const [now, setNow] = useState<number | null>(serverNow ?? null);
 
   useEffect(() => {
-    setNow(Date.now());
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    const origin = performance.now();
+    const anchor = serverNow ?? Date.now();
+    const id = window.setInterval(() => setNow(anchor + performance.now() - origin), 1000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [serverNow]);
 
   const c = countdownFrom(target, now ?? Date.parse(target));
   const done = now !== null && c.total === 0;

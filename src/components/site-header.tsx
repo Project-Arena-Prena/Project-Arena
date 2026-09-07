@@ -4,15 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Menu, Radio, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { ArenaMark } from './arena-mark';
-import { buttonClass, LiveDot } from './ui';
+import { buttonClass } from './ui';
 import { cn } from '@/lib/cn';
 
+import { SignInTrigger } from './auth/sign-in-trigger';
+
 const NAV = [
-  { href: '/arenas', label: 'Arenas' },
-  { href: '/hall-of-fame', label: 'Hall of Fame' },
-  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/for-builders', label: 'For Builders' },
+  { href: '/rankings', label: 'Rankings' },
+  { href: '/about', label: 'About' },
 ];
 
 export function SiteHeader() {
@@ -34,6 +36,13 @@ export function SiteHeader() {
     };
   }, [isHome]);
 
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setOpen(false); document.querySelector<HTMLButtonElement>('[aria-controls="mobile-navigation"]')?.focus(); } };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [open]);
+
   return (
     <header
       className={cn(
@@ -44,7 +53,7 @@ export function SiteHeader() {
           : isHome && 'border-b hairline bg-black/[0.88] backdrop-blur-xl',
       )}
     >
-      <div className="mx-auto flex h-[68px] w-full max-w-[1280px] items-center justify-between gap-6 px-5 sm:px-8">
+      <div className="mx-auto flex h-[68px] w-full max-w-[1280px] items-center justify-between gap-3 px-5 sm:px-8">
         <Link href="/" className="group flex items-center gap-3" onClick={() => setOpen(false)}>
           <motion.span
             whileHover={reduceMotion ? undefined : { rotate: -3, scale: 1.06 }}
@@ -82,12 +91,12 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3"><SignInTrigger />
           <Link
-            href="/arena/open-arena-001"
+            href="/arena/founding"
             className="hidden items-center gap-2 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] text-bone-dim transition-colors hover:text-bone lg:inline-flex"
           >
-            <LiveDot /> Watch live
+            Founding Event
           </Link>
           <Link href="/enter" className={cn(buttonClass('primary', 'sm'), 'hidden sm:inline-flex')}>
             Enter Arena
@@ -117,11 +126,11 @@ export function SiteHeader() {
             className="absolute inset-x-0 top-[68px] border-b hairline bg-black/95 px-5 pb-5 backdrop-blur-xl sm:px-8 md:hidden"
           >
             <Link
-              href="/arena/open-arena-001"
+              href="/arena/founding"
               onClick={() => setOpen(false)}
               className="flex min-h-14 items-center gap-2 border-b hairline font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-arena"
             >
-              <Radio className="h-3.5 w-3.5" /> Watch live
+              Founding Event
             </Link>
             {NAV.map((item, index) => (
               <motion.div

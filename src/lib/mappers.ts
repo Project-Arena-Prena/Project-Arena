@@ -101,6 +101,8 @@ export function arenaFromRow(row: Row): Arena {
     theme: string(row.description),
     category: string(row.category, 'Open'),
     status: string(row.status, 'registration') as ArenaStatus,
+    lifecyclePhase: optionalString(row.lifecycle_phase),
+    acceptedCount: entries.filter((entry) => ['approved', 'competing', 'finished'].includes(string(entry.status))).length,
     startsAt: string(row.starts_at),
     endsAt: string(row.ends_at),
     registrationOpensAt: optionalString(row.registration_opens_at),

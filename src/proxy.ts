@@ -37,7 +37,7 @@ export async function proxy(request: NextRequest) {
   // browser suite test a permanent 404 page.
   const devHarnessBlocked =
     process.env.NODE_ENV === 'production' &&
-    (path === '/dev-wallet-harness' || path.startsWith('/dev-wallet-harness/'));
+    ['/dev-wallet-harness', '/dev-founding-harness'].some((prefix) => path === prefix || path.startsWith(prefix + '/'));
 
   if (phaseTwoBlocked || devHarnessBlocked) {
     return new NextResponse('Not Found', { status: 404 });
@@ -48,8 +48,18 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Fixture mode: no Supabase, nothing to refresh.
-  if (!url || !anonKey) return NextResponse.next();
+  // An unconfigured preview is unauthenticated, but still preserves the
+  // requested destination rather than letting the dashboard layout replace it.
+  if (!url || !anonKey) {
+    if (['/dashboard', '/admin'].some((prefix) => path === prefix || path.startsWith(prefix + '/'))) {
+      const login = request.nextUrl.clone();
+      login.pathname = '/login';
+      login.search = '';
+      login.searchParams.set('next', path + request.nextUrl.search);
+      return NextResponse.redirect(login);
+    }
+    return NextResponse.next();
+  }
 
   let response = NextResponse.next({ request });
 
@@ -87,7 +97,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/cron/reconcile|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/cron/reconcile|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico|woff2?)$).*)',
   ],
 };
 

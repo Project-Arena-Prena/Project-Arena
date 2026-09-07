@@ -1,16 +1,4 @@
-import {
-  ALL_ARENAS,
-  DEMO_BUILDER_PROJECT_SLUGS,
-  HALL_OF_FAME,
-  LIVE_ARENA,
-  PAST_ARENAS,
-  PROJECTS,
-  UPCOMING_ARENAS,
-  arenaBySlug,
-  historyForProject,
-  projectBySlug,
-  standingsForArena,
-} from './mock-data';
+import { cache } from 'react';
 import { createAdminClient, createAnonClient, createClient } from './supabase/server';
 import { isSupabaseConfigured } from './supabase/config';
 import { reconcileArenas } from './arena-lifecycle';
@@ -41,7 +29,9 @@ async function readArena(slug?: string): Promise<Arena | null> {
   if (!supabase) return null;
   await reconcileArenas();
   let query = supabase.from('arenas').select(ARENA_SELECT).order('ends_at', { ascending: true }).limit(1);
-  query = slug ? query.eq('slug', slug) : query.eq('status', 'live');
+  if (slug && slug !== 'founding') return null;
+  query = query.eq('slug', 'founding').neq('status', 'draft');
+  if (!slug) query = query.eq('status', 'live');
   const { data, error } = await query.maybeSingle();
   return error || !data ? null : arenaFromRow(data as Row);
 }
@@ -50,15 +40,15 @@ export async function getLiveArena(): Promise<Arena | null> {
   const live = await readArena();
   if (live) return live;
   if (isSupabaseConfigured) return null;
-  return LIVE_ARENA;
+  return null;
 }
 
-export async function getArena(slug: string): Promise<Arena | null> {
+export const getArena = cache(async (slug: string): Promise<Arena | null> => {
   const live = await readArena(slug);
   if (live) return live;
   if (isSupabaseConfigured) return null;
-  return arenaBySlug(slug) ?? null;
-}
+  return null;
+});
 
 export async function getArenas(): Promise<{
   live: Arena[];
@@ -72,7 +62,7 @@ export async function getArenas(): Promise<{
     const { data, error } = await supabase
       .from('arenas')
       .select(ARENA_SELECT)
-      .neq('status', 'draft')
+      .eq('slug', 'founding').neq('status', 'draft')
       .order('starts_at', { ascending: false });
     const arenas = !error && data ? (data as Row[]).map(arenaFromRow) : [];
     return {
@@ -82,17 +72,17 @@ export async function getArenas(): Promise<{
       cancelled: arenas.filter((arena) => arena.status === 'cancelled'),
     };
   }
-  return { live: [LIVE_ARENA], upcoming: UPCOMING_ARENAS, past: PAST_ARENAS, cancelled: [] };
+  return { live: [], upcoming: [], past: [], cancelled: [] };
 }
 
 export async function getAllArenaSlugs(): Promise<string[]> {
   const supabase = createAnonClient() ?? (await createClient());
   if (supabase) {
-    const { data, error } = await supabase.from('arenas').select('slug').neq('status', 'draft');
+    const { data, error } = await supabase.from('arenas').select('slug').eq('slug', 'founding').neq('status', 'draft');
     if (!error && data?.length) return data.map((row) => row.slug);
     if (isSupabaseConfigured) return [];
   }
-  return ALL_ARENAS.map((arena) => arena.slug);
+  return [];
 }
 
 export async function getStandings(slug: string, limit?: number): Promise<Standing[]> {
@@ -106,17 +96,15 @@ export async function getStandings(slug: string, limit?: number): Promise<Standi
       return attachMomentum(slug, rows);
     }
   }
-  const rows = standingsForArena(slug);
-  return typeof limit === 'number' ? rows.slice(0, limit) : rows;
+  return [];
 }
 
 /**
- * Completed Arenas read from the frozen result ledger. Live and pre-migration
- * Arenas deliberately fall back to the active standings view.
+ * Completed Arenas read only from the frozen result ledger.
  */
 export async function getFinalArenaStandings(slug: string): Promise<Standing[]> {
   const [arena, supabase] = await Promise.all([getArena(slug), createClient()]);
-  if (!arena || arena.status !== 'finished' || !supabase) return getStandings(slug);
+  if (!arena || arena.status !== 'finished' || !supabase) return [];
 
   const { data, error } = await supabase
     .from('arena_results')
@@ -124,12 +112,13 @@ export async function getFinalArenaStandings(slug: string): Promise<Standing[]> 
     .eq('arena_id', arena.id)
     .order('final_rank', { ascending: true });
 
-  if (error || !data?.length) return getStandings(slug);
+  if (error || !data?.length) return [];
   return (data as Row[]).map((row) => {
     const project = nested<Row>(row.projects) ?? {};
     return standingFromRow({
-      ...project,
       ...row,
+      ...project,
+      id: row.project_id,
       rank: row.final_rank,
       unique_visit_count: row.qualified_visit_count,
     });
@@ -171,7 +160,7 @@ export async function getProject(slug: string): Promise<Project | null> {
       .maybeSingle();
     if (!error && data) return projectFromRow(data as unknown as Row);
   }
-  return projectBySlug(slug) ?? null;
+  return null;
 }
 
 export async function getAllProjectSlugs(): Promise<string[]> {
@@ -181,7 +170,7 @@ export async function getAllProjectSlugs(): Promise<string[]> {
     if (!error && data?.length) return data.map((row) => row.slug);
     if (isSupabaseConfigured) return [];
   }
-  return PROJECTS.map((project) => project.slug);
+  return [];
 }
 
 export async function getProjectHistory(slug: string): Promise<ProjectHistoryEntry[]> {
@@ -190,10 +179,10 @@ export async function getProjectHistory(slug: string): Promise<ProjectHistoryEnt
     const { data, error } = await supabase
       .from('arena_standings')
       .select(
-        'arena_id, arena_slug, rank, final_rank, supporter_count, unique_visit_count, impression_count, arenas:arena_id(number,name,ends_at,status,max_entries)',
+        'arena_id, arena_slug, rank, final_rank, supporter_count, unique_visit_count, impression_count, project_id, arenas:arena_id(number,name,ends_at,status,max_entries,champion_project_id)',
       )
       .eq('project_slug', slug)
-      .eq('arena_status', 'finished');
+      .eq('arena_status', 'finished').eq('arena_slug', 'founding');
     if (!error && data) {
       const ids = (data as Row[]).map((row) => string(row.arena_id)).filter(Boolean);
       const ratingByArena = new Map<string, number>();
@@ -224,12 +213,12 @@ export async function getProjectHistory(slug: string): Promise<ProjectHistoryEnt
           clicks: number(row.unique_visit_count),
           impressions: number(row.impression_count),
           ratingDelta: ratingByArena.get(string(row.arena_id)) ?? 0,
-          champion: rank === 1,
+          champion: arena?.champion_project_id === row.project_id,
         };
       });
     }
   }
-  return historyForProject(slug);
+  return [];
 }
 
 export async function getLiveStandingForProject(slug: string): Promise<Standing | null> {
@@ -245,22 +234,22 @@ export async function getHallOfFame(): Promise<ArenaResult[]> {
     const { data, error } = await supabase
       .from('arenas')
       .select(ARENA_SELECT)
-      .eq('status', 'finished')
+      .eq('slug', 'founding').eq('status', 'finished')
       .order('ends_at', { ascending: false });
     if (!error && data) {
       const results: ArenaResult[] = [];
       for (const row of data as Row[]) {
         const arena = arenaFromRow(row);
         const standings = await getFinalArenaStandings(arena.slug);
-        const champion = standings[0];
+        const champion = standings.find((standing) => standing.project.id === arena.championProjectId);
         if (!champion) continue;
-        results.push({ arena, champion, runnersUp: standings.slice(1, 3) });
+        results.push({ arena, champion, runnersUp: standings.filter((standing) => standing.project.id !== arena.championProjectId).slice(0, 2) });
       }
       return results;
     }
     if (isSupabaseConfigured) return [];
   }
-  return HALL_OF_FAME;
+  return [];
 }
 
 export async function getTopRatedProjects(limit = 10): Promise<Project[]> {
@@ -275,11 +264,11 @@ export async function getTopRatedProjects(limit = 10): Promise<Project[]> {
     if (!error && data) return (data as unknown as Row[]).map((row) => projectFromRow(row));
     if (isSupabaseConfigured) return [];
   }
-  return [...PROJECTS].sort((a, b) => b.arenaRating - a.arenaRating).slice(0, limit);
+  return [];
 }
 
 export async function getBuilderProjects(): Promise<Project[]> {
-  return PROJECTS.filter((project) => DEMO_BUILDER_PROJECT_SLUGS.includes(project.slug));
+  return [];
 }
 
 export async function getNextArenaForCategory(category: string, excludeSlug?: string): Promise<Arena | null> {

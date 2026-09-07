@@ -10,12 +10,14 @@ export function Leaderboard({
   live = false,
   compact = false,
   interactive = true,
+  championProjectId,
 }: {
   standings: Standing[];
   arenaSlug: string;
   live?: boolean;
   compact?: boolean;
   interactive?: boolean;
+  championProjectId?: string | null;
 }) {
   return (
     <div className="w-full">
@@ -27,7 +29,7 @@ export function Leaderboard({
             arenaSlug={arenaSlug}
             live={live}
             interactive={interactive && !compact}
-            champion={!live && s.rank === 1}
+            champion={!live && s.project.id === championProjectId}
             index={i}
           />
         ))}
