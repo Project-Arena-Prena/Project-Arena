@@ -30,14 +30,13 @@ export default async function HomePage() {
       <GatewayJourney><section className="founding-hero">
         <div className="founding-hero-art" aria-hidden="true">
           <Image
-            src="/art/founding-gateway.webp"
+            src="/art/roman-hero.webp"
             alt=""
             fill
             priority
             sizes="100vw"
             className="object-cover"
           />
-          <video className="gateway-video" preload="none" muted playsInline aria-hidden="true" tabIndex={-1} />
         </div>
         <div className="founding-hero-shade" />
         <Container className="relative z-10">

@@ -10,7 +10,7 @@ export default defineConfig({
   use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run prepare:founding-assets && npx next dev --webpack -p ' + port,
+    command: 'npx next dev --webpack -p ' + port,
     url: baseURL, reuseExistingServer: !process.env.CI, timeout: 180000,
     stdout: 'pipe', stderr: 'pipe',
   },

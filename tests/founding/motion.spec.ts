@@ -94,54 +94,53 @@ test('entry progress reflects selection and does not claim submission', async ({
   await expect(progress.locator('[aria-current="step"]')).toHaveText('Review & submit');
 });
 
-test('desktop video follows scroll both ways, rests, and resets across live gates', async ({ page }) => {
+test('Roman artwork follows scroll, rests, and resets across live gates', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
+  let mediaRequests = 0;
+  page.on('request', (request) => { if (/\\.mp4(?:\\?|$)/.test(request.url())) mediaRequests++; });
   await page.goto('/');
   const journey = page.locator('.gateway-journey');
-  const video = page.locator('.gateway-video');
-  await expect(journey).toHaveAttribute('data-mode', 'scrub');
-  await page.evaluate(() => window.scrollTo({ top: innerHeight * 2, behavior: 'instant' }));
-  await expect.poll(() => video.evaluate((element) => (element as HTMLVideoElement).currentTime)).toBeGreaterThan(3);
+  const art = page.locator('.founding-hero-art');
+  await expect(journey).toHaveAttribute('data-mode', 'scroll');
+  await expect(art.locator('img')).toHaveAttribute('src', /roman-hero/);
+  await expect(page.locator('.founding-hero video')).toHaveCount(0);
+  const initial = await art.evaluate((element) => getComputedStyle(element).transform);
+  await journey.evaluate((element) => window.scrollTo({ top: element.getBoundingClientRect().top + scrollY + (element.clientHeight - innerHeight) * .7, behavior: 'instant' }));
+  const progress = () => journey.evaluate((element) => Number((element as HTMLElement).style.getPropertyValue('--hero-progress')));
+  await expect.poll(progress).toBeCloseTo(.7, 3);
   await expect(page.locator('.gateway-settle')).toHaveCSS('opacity', '1');
-  // Wait for the eased seek to reach this scroll position before measuring rest.
-  await expect.poll(() => video.evaluate((element) => {
-    const media = element as HTMLVideoElement;
-    return Math.abs(media.currentTime - (media.duration - 1 / 24) * 2 / 3);
-  })).toBeLessThan(1 / 24);
-  const stillTime = await video.evaluate((element) => (element as HTMLVideoElement).currentTime);
+  const settled = await art.evaluate((element) => getComputedStyle(element).transform);
+  expect(settled).not.toBe(initial);
   await page.waitForTimeout(350);
-  expect(await video.evaluate((element) => (element as HTMLVideoElement).currentTime)).toBeCloseTo(stillTime, 1);
+  expect(await art.evaluate((element) => getComputedStyle(element).transform)).toBe(settled);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-  await expect.poll(() => video.evaluate((element) => (element as HTMLVideoElement).currentTime)).toBeLessThan(.1);
+  await expect.poll(progress).toBe(0);
+  await expect(page.locator('h1')).toHaveCSS('opacity', '1');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(journey).toHaveAttribute('data-mode', 'static');
-  await expect(video).not.toHaveAttribute('src');
-  await expect(page.locator('h1')).toHaveCSS('opacity', '1');
+  await expect(art).toHaveCSS('transform', 'none');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await expect(journey).toHaveAttribute('data-mode', 'scrub');
+  await expect(journey).toHaveAttribute('data-mode', 'scroll');
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(journey).toHaveAttribute('data-mode', 'static');
-  await expect(video).not.toHaveAttribute('src');
+  expect(mediaRequests).toBe(0);
 });
 
-test('mobile, reduced motion and blocked video keep a complete still hero', async ({ browser }) => {
-  for (const mode of ['mobile', 'reduced', 'blocked', 'portrait-tablet', 'landscape-phone', 'save-data']) {
+test('mobile and motion preferences keep the still Roman hero', async ({ browser }) => {
+  for (const mode of ['mobile', 'reduced', 'portrait-tablet', 'landscape-phone', 'save-data', 'slow-connection']) {
     const context = await browser.newContext({
       viewport: mode === 'mobile' ? { width: 390, height: 844 } : mode === 'portrait-tablet' ? { width: 820, height: 1180 } : mode === 'landscape-phone' ? { width: 900, height: 420 } : { width: 1440, height: 900 },
       hasTouch: mode === 'landscape-phone',
       reducedMotion: mode === 'reduced' ? 'reduce' : 'no-preference',
     });
-    if (mode === 'save-data') await context.addInitScript(() => Object.defineProperty(navigator, 'connection', { value: Object.assign(new EventTarget(), { saveData: true }) }));
+    if (mode === 'save-data' || mode === 'slow-connection') await context.addInitScript((slow) => Object.defineProperty(navigator, 'connection', { value: Object.assign(new EventTarget(), slow ? { effectiveType: '2g' } : { saveData: true }) }), mode === 'slow-connection');
     const page = await context.newPage();
-    let videoRequests = 0;
-    await page.route('**/founding-gateway-scrub.mp4', (route) => { videoRequests++; return route.abort(); });
     await page.goto('/');
-    await page.waitForTimeout(800);
+    await expect(page.locator('.founding-hero-art img')).toHaveJSProperty('complete', true);
     await expect(page.locator('.gateway-journey')).toHaveAttribute('data-mode', 'static');
+    await expect(page.locator('.founding-hero-art')).toHaveCSS('transform', 'none');
     await expect(page.locator('h1')).toBeVisible();
     await expect(page.locator('.founding-hero .hero-bottom a').first()).toBeVisible();
-    if (mode !== 'blocked') expect(videoRequests).toBe(0);
-    else expect(videoRequests).toBe(1);
     await context.close();
   }
 });
