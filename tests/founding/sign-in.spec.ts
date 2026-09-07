@@ -56,3 +56,16 @@ test('direct sign-in and contact links work without JavaScript', async ({ browse
   await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
   await context.close();
 });
+
+test('page artwork responds to scrolling and stops for reduced motion', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/about');
+  const art = page.locator('.page-scene-art');
+  await expect.poll(() => art.locator('img').evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  const initial = await art.evaluate((element) => getComputedStyle(element).transform);
+  await page.evaluate(() => window.scrollTo({ top: 400, behavior: 'instant' }));
+  await expect.poll(() => art.evaluate((element) => getComputedStyle(element).transform)).not.toBe(initial);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(art).toHaveCSS('transform', 'none');
+  await expect(art).toHaveCSS('animation-name', 'none');
+});
