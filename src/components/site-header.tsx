@@ -9,6 +9,8 @@ import { ArenaMark } from './arena-mark';
 import { buttonClass } from './ui';
 import { cn } from '@/lib/cn';
 
+import { SignInTrigger } from './auth/sign-in-trigger';
+
 const NAV = [
   { href: '/for-builders', label: 'For Builders' },
   { href: '/rankings', label: 'Rankings' },
@@ -51,7 +53,7 @@ export function SiteHeader() {
           : isHome && 'border-b hairline bg-black/[0.88] backdrop-blur-xl',
       )}
     >
-      <div className="mx-auto flex h-[68px] w-full max-w-[1280px] items-center justify-between gap-6 px-5 sm:px-8">
+      <div className="mx-auto flex h-[68px] w-full max-w-[1280px] items-center justify-between gap-3 px-5 sm:px-8">
         <Link href="/" className="group flex items-center gap-3" onClick={() => setOpen(false)}>
           <motion.span
             whileHover={reduceMotion ? undefined : { rotate: -3, scale: 1.06 }}
@@ -89,7 +91,7 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3"><SignInTrigger />
           <Link
             href="/arena/founding"
             className="hidden items-center gap-2 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] text-bone-dim transition-colors hover:text-bone lg:inline-flex"

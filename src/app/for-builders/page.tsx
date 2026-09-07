@@ -1,13 +1,14 @@
 import { Container, ButtonLink } from "@/components/ui";
 import { ScrollReveals } from "@/components/founding/scroll-reveals";
 import { ProjectPreview } from "@/components/founding/project-preview";
+import { PageScene } from "@/components/founding/page-scene";
 export const metadata = {
   title: "For Builders",
   alternates: { canonical: "/for-builders" },
 };
 export default function BuildersPage() {
   return (
-    <ScrollReveals><Container className="founding-section">
+    <ScrollReveals><PageScene scene="builders">
       <p className="founding-eyebrow">For Builders</p>
       <h1 className="statement mt-6">
         You built it.
@@ -19,6 +20,7 @@ export default function BuildersPage() {
         <br />
         Enter the first field and give people a reason to explore your work.
       </p>
+    </PageScene><Container className="founding-section page-scene-follow">
       <ol className="mechanics">
         <li data-reveal="rise">
           <span>01 / Enter</span>

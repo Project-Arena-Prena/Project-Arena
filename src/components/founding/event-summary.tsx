@@ -13,14 +13,14 @@ const DESCRIPTION = {
   completed: 'The competition is complete. Explore the permanent record of earned attention.',
   cancelled: 'This event has been cancelled. Entry is closed.',
 };
-export function EventSummary({ arena, now }: { arena: Arena | null; now: number }) {
+export function EventSummary({ arena, now, heading: Heading = 'h2' }: { arena: Arena | null; now: number; heading?: 'h1' | 'h2' }) {
   const phase = foundingPhase(arena, now);
   const action = foundingAction(phase);
   const confirmed = arena && phase !== 'draft';
   const target = phase === 'live' ? arena?.endsAt : phase === 'open' || phase === 'entry_closed' ? arena?.startsAt : null;
   return <div>
     <p className="founding-eyebrow"><span className={phase === 'live' ? 'event-light live' : 'event-light'} />Founding Event · {PHASE_LABEL[phase]}</p>
-    <h2 className="event-title">The Founding<br /><em>Arena.</em></h2>
+    <Heading className="event-title">The Founding<br /><em>Arena.</em></Heading>
     <p className="founding-copy max-w-xl">{DESCRIPTION[phase]}</p>
     {confirmed ? <dl className="event-facts">
       <div><dt>Entry</dt><dd>{arena.entryFeeCents === 0 ? 'Free' : formatMoney(arena.entryFeeCents)}</dd></div>

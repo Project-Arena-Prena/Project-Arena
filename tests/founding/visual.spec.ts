@@ -22,10 +22,12 @@ test('Roman hero scroll frames, rapid scrolling and responsive layout', async ({
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const width of [390, 820, 1440]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
-    for (const path of ['/', '/for-builders', '/arena/founding', '/rankings', '/about']) {
+    for (const path of ['/', '/for-builders', '/arena/founding', '/rankings', '/about', '/login']) {
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      const artwork = page.locator('.page-scene-art img, .sign-in-art img');
+      if (await artwork.count()) await expect.poll(() => artwork.first().evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
       await testInfo.attach(width + '-' + (path.replaceAll('/', '-') || 'home'), { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
     }
   }

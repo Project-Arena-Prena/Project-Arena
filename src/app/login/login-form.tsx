@@ -5,7 +5,7 @@ import { Button, Label, Panel } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 
-export function LoginForm({ next, errorCode }: { next: string; errorCode?: string }) {
+export function LoginForm({ next, errorCode, embedded = false }: { next: string; errorCode?: string; embedded?: boolean }) {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [sent, setSent] = useState(false);
@@ -18,7 +18,7 @@ export function LoginForm({ next, errorCode }: { next: string; errorCode?: strin
     event.preventDefault();
     if (pending) return;
     if (!isSupabaseConfigured) {
-      setError('Auth is not configured in this environment.');
+      setError('Sign-in is temporarily unavailable. Please try again later.');
       return;
     }
     setPending(true);
@@ -46,7 +46,7 @@ export function LoginForm({ next, errorCode }: { next: string; errorCode?: strin
     event.preventDefault();
     if (pending) return;
     if (!isSupabaseConfigured) {
-      setError('Auth is not configured in this environment.');
+      setError('Sign-in is temporarily unavailable. Please try again later.');
       return;
     }
     setPending(true);
@@ -70,7 +70,7 @@ export function LoginForm({ next, errorCode }: { next: string; errorCode?: strin
   if (sent) {
     return (
       <form onSubmit={verify} className="max-w-lg">
-        <Panel className="flex flex-col gap-5 p-6 sm:p-8">
+        <Panel className={embedded ? "sign-in-form-fields flex flex-col gap-5" : "flex flex-col gap-5 p-6 sm:p-8"}>
           <div>
             <Label>Check your email</Label>
             <h2 className="mt-4 text-2xl font-semibold tracking-headline">Enter your sign-in code.</h2>
@@ -96,7 +96,7 @@ export function LoginForm({ next, errorCode }: { next: string; errorCode?: strin
               className="h-12 w-full border hairline bg-transparent px-3 font-mono text-lg tracking-[0.35em] text-bone placeholder:text-bone-faint"
             />
           </div>
-          {error ? <p className="font-mono text-[10px] uppercase tracking-widest text-arena">{error}</p> : null}
+          {error ? <p role="alert" className="font-mono text-[10px] uppercase tracking-widest text-arena">{error}</p> : null}
           <Button type="submit" size="lg" disabled={pending || otp.length !== 6} className="w-full sm:w-auto">
             {pending ? 'Verifying' : 'Verify and sign in'}
           </Button>
@@ -118,7 +118,7 @@ export function LoginForm({ next, errorCode }: { next: string; errorCode?: strin
 
   return (
     <form onSubmit={submit} className="max-w-lg">
-      <Panel className="flex flex-col gap-5 p-6 sm:p-8">
+      <Panel className={embedded ? "sign-in-form-fields flex flex-col gap-5" : "flex flex-col gap-5 p-6 sm:p-8"}>
         <div className="flex flex-col gap-2">
           <label htmlFor="email" className="label">
             Email
@@ -134,7 +134,7 @@ export function LoginForm({ next, errorCode }: { next: string; errorCode?: strin
             className="h-11 w-full border hairline bg-transparent px-3 font-mono text-[13px] text-bone placeholder:text-bone-faint"
           />
         </div>
-        {error ? <p className="font-mono text-[10px] uppercase tracking-widest text-arena">{error}</p> : null}
+        {error ? <p role="alert" className="font-mono text-[10px] uppercase tracking-widest text-arena">{error}</p> : null}
         <Button type="submit" size="lg" disabled={pending} className="w-full sm:w-auto">
           {pending ? 'Sending' : 'Send sign-in code'}
         </Button>

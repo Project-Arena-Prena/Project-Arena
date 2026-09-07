@@ -231,3 +231,73 @@ html, body { overflow-x:hidden; overflow-x:clip; }
   .gateway-journey[data-mode="scroll"] .founding-hero-art { transform:none; will-change:auto; }
   .gateway-journey[data-mode="scroll"] .gateway-intro { opacity:1; transform:none; }
 }
+
+/* Roman page scenes: readable stills everywhere, scroll-linked depth on capable desktops. */
+.page-scene { position:relative; isolation:isolate; overflow:hidden; background:#12120f; view-timeline-name:--scene; view-timeline-axis:block; border-bottom:1px solid var(--founding-line); }
+.page-scene-art { position:absolute; inset:0; z-index:-2; }
+.page-scene-art img { object-position:65% 50%; }
+.page-scene::after { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg,#0b0c0bf5 0%,#0b0c0bcc 34%,#0b0c0b30 76%),linear-gradient(0deg,#0b0c0be6,transparent 45%); }
+.page-scene-content { position:relative; padding-block:clamp(5rem,9vw,8rem); min-height:560px; display:flex; flex-direction:column; justify-content:center; }
+.page-scene .statement { max-width:800px; font-size:clamp(3rem,6vw,6rem); text-shadow:0 3px 24px #0009; }
+.page-scene .founding-copy { max-width:560px; color:#d1cbc1; }
+.page-scene .founding-eyebrow { color:#d9b58a; }
+.page-scene-founding .page-scene-content { min-height:680px; }
+.page-scene-founding .event-title { font-size:clamp(4rem,7vw,7rem); }
+.page-scene-founding .event-facts { max-width:600px; background:#0b0c0bb3; padding:1.2rem; }
+.page-scene-follow { padding-top:clamp(3rem,6vw,5rem); }
+.page-scene-follow > .mechanics,.page-scene-follow > .event-principles { margin-top:0; }
+.arena-contacts { display:flex; flex-wrap:wrap; gap:1.5rem 3rem; margin-top:2rem; }
+.arena-contacts a { display:flex; flex-direction:column; gap:.6rem; padding-block:.25rem; color:var(--founding-text); overflow-wrap:anywhere; }
+.arena-contacts span { color:var(--founding-muted); font:10px ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
+.arena-contacts strong { font-size:.85rem; font-weight:400; }
+.arena-contacts a:hover strong { color:var(--founding-accent); }
+.about-contact { border-top:1px solid var(--founding-line); margin-top:5rem; padding-top:3rem; }
+.sign-in-trigger { display:inline-flex; align-items:center; min-height:44px; white-space:nowrap; font:10px ui-monospace,monospace; text-transform:uppercase; letter-spacing:.08em; color:var(--founding-text); }
+.sign-in-trigger:hover { color:var(--founding-accent); }
+.sign-in-page { padding-block:clamp(2rem,6vw,5rem); }
+.sign-in-panel { display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); width:100%; max-width:960px; margin:auto; border:1px solid var(--founding-line); background:#131410; color:var(--founding-text); }
+.sign-in-art { position:relative; min-height:570px; overflow:hidden; isolation:isolate; }
+.sign-in-art img { z-index:-2; object-position:50% 44%; }
+.sign-in-art::after { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(0deg,#080908eb,transparent 70%); }
+.sign-in-art-caption { position:absolute; bottom:2.5rem; left:2rem; right:2rem; }
+.sign-in-art-caption p { font-size:2.4rem; line-height:1.1; letter-spacing:-.04em; margin-top:1rem; }
+.sign-in-art-caption em { font-family:Georgia,serif; font-weight:400; color:#d3b58b; }
+.sign-in-content { padding:clamp(2rem,4vw,3.5rem); align-self:center; min-width:0; }
+.sign-in-title { font-size:clamp(2.8rem,4vw,4rem); line-height:1.05; letter-spacing:-.045em; margin-top:1.3rem; }
+.sign-in-description { font-size:.9rem; line-height:1.8; color:var(--founding-muted); margin-block:1.3rem 2rem; }
+.sign-in-form-fields { border:0; background:transparent; padding:0; }
+.sign-in-dialog { margin:auto; width:min(960px,calc(100% - 2rem)); max-width:none; max-height:calc(100dvh - 2rem); padding:0; overflow:auto; border:0; background:#131410; color:var(--founding-text); box-shadow:0 30px 100px #0009; }
+.sign-in-dialog::backdrop { background:#050605bf; backdrop-filter:blur(7px); }
+.sign-in-dialog[open] { animation:sign-in-arrive .24s var(--founding-ease) both; }
+.sign-in-close { position:absolute; top:.75rem; right:.75rem; width:44px; height:44px; display:grid; place-items:center; z-index:2; background:#10120fe8; border:1px solid var(--founding-line); color:var(--founding-text); }
+.sign-in-close:hover { border-color:var(--founding-accent); }
+@keyframes sign-in-arrive { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+@keyframes scene-depth { from { transform:scale(1.02) translateY(0); } to { transform:scale(1.09) translateY(2%); } }
+@supports (animation-timeline:view()) {
+  @media(min-width:1025px) and (prefers-reduced-motion:no-preference) and (pointer:fine) {
+    .page-scene-art { animation:scene-depth linear both; animation-timeline:--scene; animation-range:exit 0% exit 100%; }
+  }
+}
+@media(max-width:767px) {
+  .page-scene-content { min-height:520px; padding-block:4rem; justify-content:flex-end; }
+  .page-scene-art img { object-position:65% 30%; }
+  .page-scene::after { background:linear-gradient(0deg,#0b0c0bf5 3%,#0b0c0bcc 42%,#0b0c0b26 100%); }
+  .page-scene .statement { font-size:clamp(2.8rem,10vw,4.5rem); }
+  .page-scene .founding-copy { font-size:.95rem; }
+  .page-scene-founding .page-scene-content { min-height:640px; padding-top:12rem; }
+  .page-scene-founding::after { background:linear-gradient(0deg,#0b0c0bf5 35%,#0b0c0bbb 70%,#0b0c0b35); }
+}
+@media(max-width:640px) {
+  .sign-in-panel { grid-template-columns:1fr; }
+  .sign-in-art { min-height:180px; max-height:180px; }
+  .sign-in-art img { object-position:50% 42%; }
+  .sign-in-art-caption { bottom:1.25rem; left:1.5rem; }
+  .sign-in-art-caption p { display:none; }
+  .sign-in-content { padding:2rem 1.5rem; }
+  .sign-in-title { font-size:2.8rem; }
+  .sign-in-dialog { width:calc(100% - 1rem); max-height:calc(100dvh - 1rem); }
+}
+@media(prefers-reduced-motion:reduce) {
+  .sign-in-dialog[open] { animation:none; }
+  .page-scene-art { animation:none!important; transform:none!important; }
+}
