@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui';
@@ -25,7 +26,7 @@ export function ProjectPreview() {
         <p className="founding-eyebrow">Your work / In view</p>
         <h2 id="preview-title" className="statement mt-6">See your Project<br /><em>on the stage.</em></h2>
         <p className="founding-copy mt-6">Try your name and tagline. No account needed to preview.</p>
-        <noscript><p className="mt-4 text-sm text-bone-dim">Enable JavaScript for the live preview, or <a className="underline" href="/dashboard/projects/new">create your Project</a>.</p><style>{'.project-preview form { display:none; }'}</style></noscript>
+        <noscript><p className="mt-4 text-sm text-bone-dim">Enable JavaScript for the live preview, or <Link className="underline" href="/dashboard/projects/new">create your Project</Link>.</p><style>{'.project-preview form { display:none; }'}</style></noscript>
         <form onSubmit={proceed} aria-busy={navigating} className="mt-8 flex flex-col gap-5">
           <label className="preview-field">Project name
             <input name="preview-name" disabled={!hydrated} required maxLength={60} value={name} onChange={(event) => setName(event.target.value)} autoComplete="off" placeholder="What did you build?" />

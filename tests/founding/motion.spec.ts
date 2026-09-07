@@ -8,7 +8,7 @@ test('preview gives value before sign-in and restores only on request', async ({
   await page.getByLabel('One-line description').fill('A home for ideas worth growing.');
   await expect(page.locator('.preview-card h3')).toHaveText('Garden Notes');
   await page.getByRole('button', { name: 'Continue with this Project' }).click();
-  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard%2Fprojects%2Fnew/, { timeout: 90_000 });
+  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard%2Fprojects%2Fnew/, { timeout: 30_000 });
   expect(page.url()).not.toContain('Garden');
   await page.goto('/dev-founding-harness?view=project');
   await expect(page.getByLabel('Name', { exact: true })).toHaveValue('');
@@ -103,6 +103,11 @@ test('desktop video follows scroll both ways, rests, and resets across live gate
   await page.evaluate(() => window.scrollTo({ top: innerHeight * 2, behavior: 'instant' }));
   await expect.poll(() => video.evaluate((element) => (element as HTMLVideoElement).currentTime)).toBeGreaterThan(3);
   await expect(page.locator('.gateway-settle')).toHaveCSS('opacity', '1');
+  // Wait for the eased seek to reach this scroll position before measuring rest.
+  await expect.poll(() => video.evaluate((element) => {
+    const media = element as HTMLVideoElement;
+    return Math.abs(media.currentTime - (media.duration - 1 / 24) * 2 / 3);
+  })).toBeLessThan(1 / 24);
   const stillTime = await video.evaluate((element) => (element as HTMLVideoElement).currentTime);
   await page.waitForTimeout(350);
   expect(await video.evaluate((element) => (element as HTMLVideoElement).currentTime)).toBeCloseTo(stillTime, 1);

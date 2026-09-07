@@ -48,8 +48,18 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Fixture mode: no Supabase, nothing to refresh.
-  if (!url || !anonKey) return NextResponse.next();
+  // An unconfigured preview is unauthenticated, but still preserves the
+  // requested destination rather than letting the dashboard layout replace it.
+  if (!url || !anonKey) {
+    if (['/dashboard', '/admin'].some((prefix) => path === prefix || path.startsWith(prefix + '/'))) {
+      const login = request.nextUrl.clone();
+      login.pathname = '/login';
+      login.search = '';
+      login.searchParams.set('next', path + request.nextUrl.search);
+      return NextResponse.redirect(login);
+    }
+    return NextResponse.next();
+  }
 
   let response = NextResponse.next({ request });
 
