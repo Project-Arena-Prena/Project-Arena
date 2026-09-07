@@ -107,7 +107,7 @@ test('Roman artwork follows scroll, rests, and resets across live gates', async 
   const initial = await art.evaluate((element) => getComputedStyle(element).transform);
   await journey.evaluate((element) => window.scrollTo({ top: element.getBoundingClientRect().top + scrollY + (element.clientHeight - innerHeight) * .7, behavior: 'instant' }));
   const progress = () => journey.evaluate((element) => Number((element as HTMLElement).style.getPropertyValue('--hero-progress')));
-  await expect.poll(progress).toBeCloseTo(.7, 3);
+  await expect.poll(progress).toBe(.7);
   await expect(page.locator('.gateway-settle')).toHaveCSS('opacity', '1');
   const settled = await art.evaluate((element) => getComputedStyle(element).transform);
   expect(settled).not.toBe(initial);
