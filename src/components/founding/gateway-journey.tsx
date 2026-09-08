@@ -50,6 +50,7 @@ export function GatewayJourney({ children }: { children: ReactNode }) {
     function loadVideo() {
       if (!video || failed || video.hasAttribute('src')) return;
       host!.dataset.video = 'loading';
+      video.preload = 'auto';
       video.src = matchMedia('(max-width: 1024px), (pointer: coarse)').matches
         ? '/media/arena-scroll-mobile.mp4' : '/media/arena-scroll-desktop.mp4';
       video.load();
