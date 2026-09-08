@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { SessionProvider } from '@/components/auth/session-provider';
+import { getSessionUser } from '@/lib/supabase/server';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -26,14 +28,17 @@ export const viewport: Viewport = {
   themeColor: '#000000',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const user = await getSessionUser();
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="min-h-screen">
+        <SessionProvider initialUser={user ? { id: user.id, email: user.email } : null}>
         <a href="#main-content" className="skip-link">Skip to content</a>
         <SiteHeader />
         <main id="main-content" tabIndex={-1}>{children}</main>
         <SiteFooter />
+        </SessionProvider>
       </body>
     </html>
   );

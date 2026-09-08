@@ -68,10 +68,11 @@ export async function proxy(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet: CookiesToSet) {
+      setAll(cookiesToSet: CookiesToSet, cacheHeaders: Record<string, string>) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        Object.entries(cacheHeaders).forEach(([name, value]) => response.headers.set(name, value));
       },
     },
   });
@@ -79,19 +80,18 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const isAuthenticated = Boolean(data?.claims?.sub);
 
-  if (path.startsWith('/dashboard') && !isAuthenticated) {
+  if (['/dashboard', '/admin'].some((prefix) => path === prefix || path.startsWith(prefix + '/')) && !isAuthenticated) {
     const login = request.nextUrl.clone();
     login.pathname = '/login';
-    login.searchParams.set('next', path);
-    return NextResponse.redirect(login);
-  }
-  if (path.startsWith('/admin') && !isAuthenticated) {
-    const login = request.nextUrl.clone();
-    login.pathname = '/login';
-    login.searchParams.set('next', path);
-    return NextResponse.redirect(login);
+    login.search = '';
+    login.searchParams.set('next', path + request.nextUrl.search);
+    const redirect = NextResponse.redirect(login);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    redirect.headers.set('Cache-Control', 'private, no-store');
+    return redirect;
   }
 
+  response.headers.set('Cache-Control', 'private, no-store');
   return response;
 }
 

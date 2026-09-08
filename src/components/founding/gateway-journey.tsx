@@ -4,9 +4,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 
 // Keep identical to the static layout gates in globals.css.
 const STATIC_GATES = [
-  '(max-width: 720px)',
-  '(orientation: portrait) and (max-width: 1024px)',
-  '(orientation: portrait) and (pointer: coarse)',
+  '(max-width: 720px) and (max-height: 680px)',
   '(orientation: landscape) and (pointer: coarse) and (max-height: 560px)',
   '(prefers-reduced-motion: reduce)',
 ];
@@ -19,6 +17,7 @@ export function GatewayJourney({ children }: { children: ReactNode }) {
   useEffect(() => {
     const host = root.current;
     const artwork = host?.querySelector<HTMLImageElement>('.founding-hero-art img');
+    const video = host?.querySelector<HTMLVideoElement>('.gateway-video');
     if (!host || !artwork || !('IntersectionObserver' in window)) return;
     const queries = STATIC_GATES.map((query) => matchMedia(query));
     const connection = (navigator as Navigator & { connection?: Connection }).connection;
@@ -30,6 +29,31 @@ export function GatewayJourney({ children }: { children: ReactNode }) {
     let shown = 0;
     let target = 0;
     let lastWritten = -1;
+    let failed = false;
+
+    function seekVideo() {
+      if (!video || failed || !active || !visible || document.hidden || video.seeking || video.readyState < 1 || !Number.isFinite(video.duration)) return;
+      // One seek in flight. Always catch up to the latest scroll position after decoding.
+      const lastFrame = Math.max(0, Math.floor(video.duration * 24) - 1);
+      const time = Math.round(shown * lastFrame) / 24;
+      if (Math.abs(video.currentTime - time) > 1 / 48) video.currentTime = time;
+    }
+    function mediaReady() {
+      if (!active || failed || !video || video.readyState < 2) return;
+      host!.dataset.video = 'ready';
+      seekVideo();
+    }
+    function mediaFailed() {
+      failed = true;
+      host!.dataset.video = 'unavailable';
+    }
+    function loadVideo() {
+      if (!video || failed || video.hasAttribute('src')) return;
+      host!.dataset.video = 'loading';
+      video.src = matchMedia('(max-width: 1024px), (pointer: coarse)').matches
+        ? '/media/arena-scroll-mobile.mp4' : '/media/arena-scroll-desktop.mp4';
+      video.load();
+    }
 
     function stop() { cancelAnimationFrame(frame); frame = 0; lastTick = 0; }
     function paint(progress: number) {
@@ -48,6 +72,7 @@ export function GatewayJourney({ children }: { children: ReactNode }) {
       shown += (target - shown) * (1 - Math.pow(.8, dt / 16.667));
       if (Math.abs(target - shown) < .0005) shown = target;
       paint(shown);
+      seekVideo();
       if (shown !== target) frame = requestAnimationFrame(tick);
       else lastTick = 0;
     }
@@ -57,15 +82,18 @@ export function GatewayJourney({ children }: { children: ReactNode }) {
       if (!active && host!.getBoundingClientRect().top >= -120) {
         active = true;
         host!.dataset.mode = 'scroll';
+        loadVideo();
       }
       if (!active) return;
       const bounds = host!.getBoundingClientRect();
-      target = clamp(-bounds.top / Math.max(1, bounds.height - innerHeight));
+      target = clamp(-bounds.top / Math.max(1, bounds.height - (host!.querySelector<HTMLElement>('.founding-hero')?.offsetHeight ?? innerHeight)));
       if (!frame && visible && !document.hidden) frame = requestAnimationFrame(tick);
     }
     function applyMode() {
       stop();
       active = false;
+      if (video?.hasAttribute('src')) { video.pause(); video.removeAttribute('src'); video.load(); }
+      delete host!.dataset.video;
       shown = target = 0;
       lastWritten = -1;
       host!.dataset.mode = 'static';
@@ -80,6 +108,9 @@ export function GatewayJourney({ children }: { children: ReactNode }) {
     });
     observer.observe(host);
     artwork.addEventListener('load', update);
+    video?.addEventListener('loadeddata', mediaReady);
+    video?.addEventListener('seeked', mediaReady);
+    video?.addEventListener('error', mediaFailed);
     queries.forEach((query) => query.addEventListener('change', applyMode));
     connection?.addEventListener('change', applyMode);
     window.addEventListener('scroll', update, { passive: true });
@@ -90,6 +121,10 @@ export function GatewayJourney({ children }: { children: ReactNode }) {
       stop();
       observer.disconnect();
       artwork.removeEventListener('load', update);
+      video?.removeEventListener('loadeddata', mediaReady);
+      video?.removeEventListener('seeked', mediaReady);
+      video?.removeEventListener('error', mediaFailed);
+      if (video?.hasAttribute('src')) { video.pause(); video.removeAttribute('src'); video.load(); }
       queries.forEach((query) => query.removeEventListener('change', applyMode));
       connection?.removeEventListener('change', applyMode);
       window.removeEventListener('scroll', update);

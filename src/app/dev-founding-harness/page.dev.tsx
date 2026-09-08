@@ -1,3 +1,6 @@
+import { SessionProvider } from '@/components/auth/session-provider';
+import { SiteHeader } from '@/components/site-header';
+import { LoginForm } from '@/app/login/login-form';
 import { EventSummary } from '@/components/founding/event-summary';
 import { Leaderboard } from '@/components/leaderboard';
 import { LiveEntryCard } from '@/components/dashboard/live-entry-card';
@@ -15,6 +18,7 @@ export const metadata = { robots: { index: false, follow: false } };
 export default async function FoundingHarness({ searchParams }: { searchParams: Promise<{ phase?: string; view?: string }> }) {
   const { phase = 'open', view } = await searchParams;
   if (view === 'project') return <Container className="founding-section"><h1>Project form verification</h1><div className="mt-8 max-w-2xl"><ProjectForm /></div></Container>;
+  if (view === 'session') return <section data-testid="session-fixture"><SessionProvider initialUser={{ id: 'fixture-user', email: 'fixture@example.invalid' }}><SiteHeader /><Container className="py-20"><LoginForm next="/dashboard/projects/new" /></Container></SessionProvider></section>;
   const now = await getServerNow();
   const arena: Arena = arenaFromRow({
     id: 'test-arena', slug: 'founding', name: 'The Founding Arena',

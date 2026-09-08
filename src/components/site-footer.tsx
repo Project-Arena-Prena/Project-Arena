@@ -13,7 +13,6 @@ const EXPLORE = [
 const BUILDERS = [
   { href: '/enter', label: 'Enter a Project' },
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/login', label: 'Sign In' },
 ];
 
 export function SiteFooter() {

@@ -1,3 +1,7 @@
+# Historical preview notes
+
+Superseded by [Arena scroll and sign-in polish](arena-scroll-auth-polish.md). The current hero uses the new scroll-controlled Higgsfield film.
+
 # Founding scroll preview
 
 The Founding homepage uses the previous Roman interior artwork from `public/art/roman-hero.webp`. A short desktop scroll sequence gently moves toward the archway and reveals the closing message. The artwork is already in the repository, so it does not depend on generated media downloads.
