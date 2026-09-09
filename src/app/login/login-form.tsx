@@ -1,11 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Label, Panel } from '@/components/ui';
+import { Button, ButtonLink, Label, Panel } from '@/components/ui';
+import { useSessionUser } from '@/components/auth/session-provider';
+import { safeInternalPath } from '@/lib/validation';
 import { createClient } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 
 export function LoginForm({ next, errorCode, embedded = false }: { next: string; errorCode?: string; embedded?: boolean }) {
+  const user = useSessionUser();
+  const destination = safeInternalPath(next, '/dashboard');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [sent, setSent] = useState(false);
@@ -16,7 +20,7 @@ export function LoginForm({ next, errorCode, embedded = false }: { next: string;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (pending) return;
+    if (pending || user) return;
     if (!isSupabaseConfigured) {
       setError('Sign-in is temporarily unavailable. Please try again later.');
       return;
@@ -30,7 +34,7 @@ export function LoginForm({ next, errorCode, embedded = false }: { next: string;
         email: email.trim(),
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(destination)}`,
         },
       });
       if (authError) throw authError;
@@ -44,7 +48,7 @@ export function LoginForm({ next, errorCode, embedded = false }: { next: string;
 
   async function verify(event: React.FormEvent) {
     event.preventDefault();
-    if (pending) return;
+    if (pending || user) return;
     if (!isSupabaseConfigured) {
       setError('Sign-in is temporarily unavailable. Please try again later.');
       return;
@@ -59,13 +63,18 @@ export function LoginForm({ next, errorCode, embedded = false }: { next: string;
         type: 'email',
       });
       if (authError) throw authError;
-      window.location.assign(next);
+      window.location.assign(destination);
     } catch {
       setError('That code is invalid or expired. Request a new one.');
     } finally {
       setPending(false);
     }
   }
+
+  if (user) return <div className="flex flex-col gap-5">
+    <p className="text-sm leading-relaxed text-bone-dim">You’re signed in. Continue with your account.</p>
+    <ButtonLink href={destination} size="lg">Continue</ButtonLink>
+  </div>;
 
   if (sent) {
     return (

@@ -12,6 +12,7 @@ import { cn } from '@/lib/cn';
 import { SignInTrigger } from './auth/sign-in-trigger';
 
 const NAV = [
+  { href: '/arena/founding', label: 'Founding Event' },
   { href: '/for-builders', label: 'For Builders' },
   { href: '/rankings', label: 'Rankings' },
   { href: '/about', label: 'About' },
@@ -67,13 +68,14 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="ml-auto hidden h-full items-center gap-8 md:flex" aria-label="Primary navigation">
+        <nav className="ml-auto hidden h-full items-center gap-5 xl:gap-7 lg:flex" aria-label="Primary navigation">
           {NAV.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'relative flex h-full items-center font-mono text-[10px] font-medium uppercase tracking-[0.14em] transition-colors',
                   active ? 'text-bone' : 'text-bone-dim hover:text-bone',
@@ -91,13 +93,7 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3"><SignInTrigger />
-          <Link
-            href="/arena/founding"
-            className="hidden items-center gap-2 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] text-bone-dim transition-colors hover:text-bone lg:inline-flex"
-          >
-            Founding Event
-          </Link>
+        <div className="flex items-center gap-2 md:ml-3 lg:gap-3"><SignInTrigger />
           <Link href="/enter" className={cn(buttonClass('primary', 'sm'), 'hidden sm:inline-flex')}>
             Enter Arena
           </Link>
@@ -106,7 +102,7 @@ export function SiteHeader() {
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
             aria-controls="mobile-navigation"
-            className="inline-flex h-11 w-11 items-center justify-center border border-white/20 text-bone transition-colors hover:border-white/60 md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center border border-white/20 text-bone transition-colors hover:border-white/60 lg:hidden"
             onClick={() => setOpen((value) => !value)}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -123,15 +119,8 @@ export function SiteHeader() {
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
             transition={{ duration: reduceMotion ? 0 : 0.2 }}
-            className="absolute inset-x-0 top-[68px] border-b hairline bg-black/95 px-5 pb-5 backdrop-blur-xl sm:px-8 md:hidden"
+            className="absolute inset-x-0 top-[68px] border-b hairline bg-black/95 px-5 pb-5 backdrop-blur-xl sm:px-8 lg:hidden"
           >
-            <Link
-              href="/arena/founding"
-              onClick={() => setOpen(false)}
-              className="flex min-h-14 items-center gap-2 border-b hairline font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-arena"
-            >
-              Founding Event
-            </Link>
             {NAV.map((item, index) => (
               <motion.div
                 key={item.href}

@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { supabaseConfig, supabaseSecretConfig } from './config';
@@ -25,12 +26,12 @@ export async function createClient() {
   });
 }
 
-export async function getSessionUser() {
+export const getSessionUser = cache(async () => {
   const supabase = await createClient();
   if (!supabase) return null;
   const { data } = await supabase.auth.getUser();
   return data.user ?? null;
-}
+});
 
 /** Cookie-less anon client for generateStaticParams and other non-request contexts. */
 export function createAnonClient() {

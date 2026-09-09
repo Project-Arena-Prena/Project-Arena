@@ -94,53 +94,75 @@ test('entry progress reflects selection and does not claim submission', async ({
   await expect(progress.locator('[aria-current="step"]')).toHaveText('Review & submit');
 });
 
-test('Roman artwork follows scroll, rests, and resets across live gates', async ({ page }) => {
+test('Higgsfield film follows scroll in both directions and rests at the requested frame', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  let mediaRequests = 0;
-  page.on('request', (request) => { if (/\\.mp4(?:\\?|$)/.test(request.url())) mediaRequests++; });
   await page.goto('/');
   const journey = page.locator('.gateway-journey');
-  const art = page.locator('.founding-hero-art');
+  const video = page.locator('.gateway-video');
   await expect(journey).toHaveAttribute('data-mode', 'scroll');
-  await expect(art.locator('img')).toHaveAttribute('src', /roman-hero/);
-  await expect(page.locator('.founding-hero video')).toHaveCount(0);
-  const initial = await art.evaluate((element) => getComputedStyle(element).transform);
+  await expect(journey).toHaveAttribute('data-video', 'ready');
+  await expect(video).toHaveAttribute('src', '/media/arena-scroll-desktop.mp4');
+  await expect(video).toHaveJSProperty('paused', true);
   await journey.evaluate((element) => window.scrollTo({ top: element.getBoundingClientRect().top + scrollY + (element.clientHeight - innerHeight) * .7, behavior: 'instant' }));
   const progress = () => journey.evaluate((element) => Number((element as HTMLElement).style.getPropertyValue('--hero-progress')));
   await expect.poll(progress).toBe(.7);
   await expect(page.locator('.gateway-settle')).toHaveCSS('opacity', '1');
-  const settled = await art.evaluate((element) => getComputedStyle(element).transform);
-  expect(settled).not.toBe(initial);
+  await expect.poll(() => video.evaluate((element) => (element as HTMLVideoElement).currentTime)).toBeGreaterThan(5.4);
+  await expect(video).toHaveJSProperty('seeking', false);
+  const settled = await video.evaluate((element) => (element as HTMLVideoElement).currentTime);
   await page.waitForTimeout(350);
-  expect(await art.evaluate((element) => getComputedStyle(element).transform)).toBe(settled);
+  expect(await video.evaluate((element) => (element as HTMLVideoElement).currentTime)).toBe(settled);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await expect.poll(progress).toBe(0);
+  await expect(video).toHaveJSProperty('currentTime', 0);
   await expect(page.locator('h1')).toHaveCSS('opacity', '1');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(journey).toHaveAttribute('data-mode', 'static');
-  await expect(art).toHaveCSS('transform', 'none');
+  await expect(video).not.toHaveAttribute('src');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await expect(journey).toHaveAttribute('data-mode', 'scroll');
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(journey).toHaveAttribute('data-mode', 'static');
-  expect(mediaRequests).toBe(0);
 });
 
-test('mobile and motion preferences keep the still Roman hero', async ({ browser }) => {
-  for (const mode of ['mobile', 'reduced', 'portrait-tablet', 'landscape-phone', 'save-data', 'slow-connection']) {
+test('mobile loads the small film and keeps navigation and the entry action accessible', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.locator('.gateway-journey')).toHaveAttribute('data-video', 'ready');
+  await expect(page.locator('.gateway-video')).toHaveAttribute('src', '/media/arena-scroll-mobile.mp4');
+  await expect(page.locator('.hero-bottom a').first()).toBeInViewport();
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
+  await page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'For Builders' }).click();
+  await expect(page).toHaveURL(/\/for-builders$/);
+  await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('reduced motion, short screens and limited connections never download the film', async ({ browser }) => {
+  for (const mode of ['short-phone', 'reduced', 'landscape-phone', 'save-data', 'slow-connection']) {
     const context = await browser.newContext({
-      viewport: mode === 'mobile' ? { width: 390, height: 844 } : mode === 'portrait-tablet' ? { width: 820, height: 1180 } : mode === 'landscape-phone' ? { width: 900, height: 420 } : { width: 1440, height: 900 },
-      hasTouch: mode === 'landscape-phone',
-      reducedMotion: mode === 'reduced' ? 'reduce' : 'no-preference',
+      viewport: mode === 'short-phone' ? { width: 320, height: 568 } : mode === 'landscape-phone' ? { width: 900, height: 420 } : { width: 1440, height: 900 },
+      hasTouch: mode === 'landscape-phone', reducedMotion: mode === 'reduced' ? 'reduce' : 'no-preference',
     });
     if (mode === 'save-data' || mode === 'slow-connection') await context.addInitScript((slow) => Object.defineProperty(navigator, 'connection', { value: Object.assign(new EventTarget(), slow ? { effectiveType: '2g' } : { saveData: true }) }), mode === 'slow-connection');
     const page = await context.newPage();
+    const mediaRequests: string[] = [];
+    page.on('request', (request) => { if (/\.mp4(?:\?|$)/.test(request.url())) mediaRequests.push(request.url()); });
     await page.goto('/');
     await expect(page.locator('.founding-hero-art img')).toHaveJSProperty('complete', true);
     await expect(page.locator('.gateway-journey')).toHaveAttribute('data-mode', 'static');
-    await expect(page.locator('.founding-hero-art')).toHaveCSS('transform', 'none');
+    await expect(page.locator('.gateway-video')).not.toHaveAttribute('src');
     await expect(page.locator('h1')).toBeVisible();
-    await expect(page.locator('.founding-hero .hero-bottom a').first()).toBeVisible();
+    expect(mediaRequests).toEqual([]);
     await context.close();
   }
+});
+
+test('a failed film keeps the poster, readable text and working entry link', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route('**/media/*.mp4', (route) => route.abort());
+  await page.goto('/');
+  await expect(page.locator('.gateway-journey')).toHaveAttribute('data-video', 'unavailable');
+  await expect(page.locator('.founding-hero-art img')).toHaveJSProperty('complete', true);
+  await expect(page.locator('h1')).toBeVisible();
+  await expect(page.locator('.hero-bottom a').first()).toBeInViewport();
 });

@@ -29,7 +29,10 @@ export async function GET(request: Request) {
     // expired one and a PKCE cookie-origin mismatch are indistinguishable
     // without this. Server-side only — never surfaced to the visitor.
     console.error('[auth/callback]', error);
-    return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+    const retry = new URL('/login', origin);
+    retry.searchParams.set('error', 'auth_callback_failed');
+    retry.searchParams.set('next', destination);
+    return NextResponse.redirect(retry);
   }
   return NextResponse.redirect(`${origin}${destination}`);
 }

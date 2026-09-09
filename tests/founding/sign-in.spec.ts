@@ -69,3 +69,27 @@ test('page artwork responds to scrolling and stops for reduced motion', async ({
   await expect(art).toHaveCSS('transform', 'none');
   await expect(art).toHaveCSS('animation-name', 'none');
 });
+
+
+test('a signed-in Builder sees Dashboard and continues without an email form, including server HTML', async ({ browser }) => {
+  for (const javaScriptEnabled of [false, true]) {
+    const context = await browser.newContext({ javaScriptEnabled });
+    const page = await context.newPage();
+    await page.goto('/dev-founding-harness?view=session');
+    const fixture = page.getByTestId('session-fixture');
+    await expect(fixture.getByRole('link', { name: 'Your dashboard' })).toHaveAttribute('href', '/dashboard');
+    await expect(fixture.getByRole('link', { name: 'Sign in', exact: true })).toHaveCount(0);
+    await expect(fixture.getByLabel('Email', { exact: true })).toHaveCount(0);
+    await expect(fixture.getByRole('link', { name: 'Continue', exact: true })).toHaveAttribute('href', '/dashboard/projects/new');
+    await context.close();
+  }
+});
+
+test('sign-in redirects preserve the requested project and safe callback retry destination', async ({ page }) => {
+  await page.goto('/dashboard/projects/new?from=preview');
+  expect(new URL(page.url()).searchParams.get('next')).toBe('/dashboard/projects/new?from=preview');
+  await page.goto('/auth/callback?next=%2Fdashboard%2Fprojects%2Fnew');
+  expect(new URL(page.url()).searchParams.get('next')).toBe('/dashboard/projects/new');
+  await page.goto('/auth/callback?next=https%3A%2F%2Fexample.com');
+  expect(new URL(page.url()).searchParams.get('next')).toBe('/dashboard');
+});
