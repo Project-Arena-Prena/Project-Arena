@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { SessionProvider } from '@/components/auth/session-provider';
@@ -39,6 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main id="main-content" tabIndex={-1}>{children}</main>
         <SiteFooter />
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   );
