@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { foundingPhase } from '../../src/lib/founding';
+import { foundingFreeSlotsRemaining, foundingPhase } from '../../src/lib/founding';
 import { arenaFromRow } from '../../src/lib/mappers';
 const now = Date.UTC(2026, 8, 7);
-const arena = arenaFromRow({ status: 'registration', starts_at: new Date(now + 86400000).toISOString(), ends_at: new Date(now + 172800000).toISOString(), max_entries: 24 });
+const arena = arenaFromRow({ slug: 'founding', status: 'registration', starts_at: new Date(now + 86400000).toISOString(), ends_at: new Date(now + 172800000).toISOString(), max_entries: 24 });
 test('missing and draft events do not imply open entry', () => {
   assert.equal(foundingPhase(null, now), 'draft');
   assert.equal(foundingPhase({ ...arena, status: 'draft' }, now + 999999999), 'draft');
@@ -24,4 +24,11 @@ test('pending review occupies capacity but never counts as accepted', () => {
   const mapped = arenaFromRow({ arena_entries: [{ status: 'pending_review' }, { status: 'approved' }, { status: 'competing' }, { status: 'finished' }, { status: 'rejected' }] });
   assert.equal(mapped.entrantCount, 3);
   assert.equal(mapped.acceptedCount, 3);
+});
+
+test('founding free entries cap at the first ten approved eligible projects', () => {
+  assert.equal(foundingFreeSlotsRemaining({ ...arena, acceptedCount: 0 }), 10);
+  assert.equal(foundingFreeSlotsRemaining({ ...arena, acceptedCount: 9 }), 1);
+  assert.equal(foundingFreeSlotsRemaining({ ...arena, acceptedCount: 10 }), 0);
+  assert.equal(foundingFreeSlotsRemaining({ ...arena, slug: 'other', acceptedCount: 0 }), 0);
 });

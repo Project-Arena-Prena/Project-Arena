@@ -1,10 +1,23 @@
 import type { Arena } from './types';
 
+export const FOUNDING_FREE_ENTRY_CAP = 10;
+
 export type FoundingPhase = 'draft' | 'open' | 'entry_closed' | 'live' | 'finalizing' | 'completed' | 'cancelled';
 export const PHASE_LABEL: Record<FoundingPhase, string> = {
   draft: 'Being prepared', open: 'Entry open', entry_closed: 'Entry closed',
   live: 'Live', finalizing: 'Results being verified', completed: 'Complete', cancelled: 'Cancelled',
 };
+
+export function foundingFreeSlotsRemaining(arena: Arena | null, acceptedCount?: number): number {
+  if (!arena || arena.slug !== 'founding') return 0;
+  const used = typeof acceptedCount === 'number' ? acceptedCount : (arena.acceptedCount ?? 0);
+  return Math.max(0, FOUNDING_FREE_ENTRY_CAP - used);
+}
+
+export function foundingFreeEntryEligible(arena: Arena | null, acceptedCount?: number): boolean {
+  return foundingFreeSlotsRemaining(arena, acceptedCount) > 0;
+}
+
 export function foundingPhase(arena: Arena | null, now: number): FoundingPhase {
   if (!arena || arena.lifecyclePhase === 'draft' || (!arena.lifecyclePhase && arena.status === 'draft')) return 'draft';
   if (arena.lifecyclePhase === 'cancelled' || (!arena.lifecyclePhase && arena.status === 'cancelled')) return 'cancelled';

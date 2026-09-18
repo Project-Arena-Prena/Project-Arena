@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { getBuilder } from '@/lib/auth';
 import { trackEvent } from '@/lib/analytics';
 import { reconcileArenas } from '@/lib/arena-lifecycle';
-import { foundingPhase } from '@/lib/founding';
+import { foundingFreeEntryEligible, foundingPhase } from '@/lib/founding';
 import { getArena } from '@/lib/queries';
 import { checkoutIntegrationId, siteUrl, stripe } from '@/lib/stripe';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -61,7 +61,8 @@ export async function POST(request: Request) {
     projectId: parsed.data.projectId,
   });
 
-  if (payload.amount === 0) {
+  const freeFoundingEntry = arena.slug === 'founding' && foundingFreeEntryEligible(arena);
+  if (payload.amount === 0 || freeFoundingEntry) {
     const { error: confirmationError } = await supabase.rpc('confirm_paid_entry', {
       p_payment_id: payload.payment_id,
       p_checkout_id: `free_${payload.payment_id}`,
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
     if (confirmationError) {
       return NextResponse.json({ error: 'entry_confirmation_failed' }, { status: 500 });
     }
-    return NextResponse.json({ url: `/enter/success?arena=${arena.slug}`, free: true });
+    return NextResponse.json({ url: `/enter/success?arena=${arena.slug}`, free: true, freeSlot: true });
   }
   if (!stripeClient) {
     return NextResponse.json({ error: 'payments_not_configured' }, { status: 503 });
