@@ -14,9 +14,10 @@ export const metadata: Metadata = {
 export default async function EntrySuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ arena?: string; session_id?: string }>;
+  searchParams: Promise<{ arena?: string; session_id?: string; free?: string }>;
 }) {
-  const { arena: arenaSlug } = await searchParams;
+  const { arena: arenaSlug, free } = await searchParams;
+  const isFreeEntry = free === '1';
   const arena = arenaSlug ? await getArena(arenaSlug) : null;
   const ctx = await getBuilder();
   const entries = ctx ? await getBuilderEntries(ctx.builder.id) : [];
@@ -28,7 +29,11 @@ export default async function EntrySuccessPage({
       <div className="max-w-3xl">
         <Label>Entry</Label>
         <h1 className="mt-4 text-5xl font-semibold tracking-headline">
-          {status === 'pending_review' || status === 'approved' ? 'Payment confirmed.' : 'Entry received.'}
+          {isFreeEntry
+            ? 'Free entry reserved.'
+            : status === 'pending_review' || status === 'approved'
+              ? 'Payment confirmed.'
+              : 'Entry received.'}
         </h1>
         {arena ? (
           <p className="mt-4 font-mono text-xs uppercase tracking-widest text-bone-dim">{arena.name}</p>
@@ -41,7 +46,11 @@ export default async function EntrySuccessPage({
           </div>
           <div className="px-5 py-5 text-sm leading-relaxed text-bone-dim">
             {status === 'pending_review' ? (
-              <p>Payment confirmed. Your Project will appear when approved.</p>
+              <p>
+                {isFreeEntry
+                  ? 'Your Project is under review. The free Arena Entry is confirmed if approved.'
+                  : 'Payment confirmed. Your Project will appear when approved.'}
+              </p>
             ) : status === 'approved' ? (
               <p>Approved. Your Project is on the grid.</p>
             ) : match?.payment?.status === 'overflow' ? (

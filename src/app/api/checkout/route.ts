@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { getBuilder } from '@/lib/auth';
 import { trackEvent } from '@/lib/analytics';
 import { reconcileArenas } from '@/lib/arena-lifecycle';
-import { foundingFreeEntryEligible, foundingPhase } from '@/lib/founding';
+import { foundingPhase } from '@/lib/founding';
 import { getArena } from '@/lib/queries';
 import { checkoutIntegrationId, siteUrl, stripe } from '@/lib/stripe';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -61,7 +61,17 @@ export async function POST(request: Request) {
     projectId: parsed.data.projectId,
   });
 
-  const freeFoundingEntry = arena.slug === 'founding' && foundingFreeEntryEligible(arena);
+  let freeFoundingEntry = false;
+  if (arena.slug === 'founding') {
+    const { data: claimed, error: claimError } = await supabase.rpc('claim_founding_free_entry', {
+      p_entry_id: payload.entry_id,
+    });
+    if (claimError) {
+      return NextResponse.json({ error: 'free_entry_allocation_failed' }, { status: 500 });
+    }
+    freeFoundingEntry = claimed === true;
+  }
+
   if (payload.amount === 0 || freeFoundingEntry) {
     const { error: confirmationError } = await supabase.rpc('confirm_paid_entry', {
       p_payment_id: payload.payment_id,
@@ -72,7 +82,11 @@ export async function POST(request: Request) {
     if (confirmationError) {
       return NextResponse.json({ error: 'entry_confirmation_failed' }, { status: 500 });
     }
-    return NextResponse.json({ url: `/enter/success?arena=${arena.slug}`, free: true, freeSlot: true });
+    return NextResponse.json({
+      url: `/enter/success?arena=${arena.slug}&free=1`,
+      free: true,
+      freeSlot: freeFoundingEntry,
+    });
   }
   if (!stripeClient) {
     return NextResponse.json({ error: 'payments_not_configured' }, { status: 503 });

@@ -65,7 +65,11 @@ export default async function AdminEntriesPage({
               </div>
               <p className="mt-2 text-xs text-bone-faint">
                 {row.arena.name}
-                {row.payment ? ` · Paid ${formatMoney(row.payment.amount)}` : ''}
+                {row.payment
+                  ? row.payment.amount === 0
+                    ? ' · Free entry'
+                    : ` · Paid ${formatMoney(row.payment.amount)}`
+                  : ''}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
