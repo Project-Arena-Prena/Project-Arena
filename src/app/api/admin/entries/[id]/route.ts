@@ -21,32 +21,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!supabase) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
 
   if (parsed.data.action === 'approve') {
-    const { data: entry } = await supabase
-      .from('arena_entries')
-      .select('arena_id, status')
-      .eq('id', id)
-      .maybeSingle();
-    if (entry) {
-      const { data: arena } = await supabase
-        .from('arenas')
-        .select('slug')
-        .eq('id', entry.arena_id)
-        .maybeSingle();
-      if (arena?.slug === 'founding') {
-        const { count, error: countError } = await supabase
-          .from('arena_entries')
-          .select('id', { count: 'exact', head: true })
-          .eq('arena_id', entry.arena_id)
-          .in('status', ['approved', 'competing', 'finished'])
-          .eq('free_entry', true);
-        if (countError) return NextResponse.json({ error: countError.message }, { status: 500 });
-        if ((count ?? 0) >= 10) {
-          return NextResponse.json({ error: 'free_slots_full' }, { status: 409 });
-        }
-      }
-    }
-
-    const { error } = await supabase.rpc('approve_entry', { p_entry_id: id });
+    const { error } = await supabase.rpc('approve_founding_entry', { p_entry_id: id });
     if (error) return NextResponse.json({ error: error.message }, { status: 409 });
     return NextResponse.json({ ok: true });
   }

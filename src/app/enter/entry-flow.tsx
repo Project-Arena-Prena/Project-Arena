@@ -6,7 +6,8 @@ import { AlertCircle, Check } from 'lucide-react';
 import { Countdown } from '@/components/countdown';
 import { Button, ButtonLink, EmptyState, Label, Panel, StatusBadge } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { formatDate, formatMoney, formatNumber } from '@/lib/format';
+import { formatDate, formatDateInTimeZone, formatMoney, formatNumber } from '@/lib/format';
+import { FOUNDING_FREE_ENTRY_CAP } from '@/lib/founding';
 import type { Arena, Project } from '@/lib/types';
 
 const API_ERRORS: Record<string, string> = {
@@ -43,6 +44,9 @@ export function EntryFlow({
   const selected = useMemo(() => arenas.find((arena) => arena.slug === arenaSlug) ?? null, [arenas, arenaSlug]);
   const project = projects.find((item) => item.id === projectId) ?? null;
   const full = selected ? selected.entrantCount >= selected.entrantCap : true;
+  const isFounding = selected?.slug === 'founding';
+  const formatArenaDate = (value: string) =>
+    isFounding ? formatDateInTimeZone(value, 'Asia/Jakarta') : formatDate(value);
 
   if (arenas.length === 0) {
     return <EmptyState title="No Arenas open yet" hint="The next competition is being prepared." />;
@@ -184,21 +188,26 @@ export function EntryFlow({
             <div className="border-t hairline px-4 py-3">
               <div className="flex justify-between">
                 <Label>Starts</Label>
-                <span className="num text-xs">{formatDate(selected.startsAt)}</span>
+                <span className="num text-xs">{formatArenaDate(selected.startsAt)}</span>
               </div>
               <div className="mt-2 flex justify-between">
                 <Label>Ends</Label>
-                <span className="num text-xs">{formatDate(selected.endsAt)}</span>
+                <span className="num text-xs">{formatArenaDate(selected.endsAt)}</span>
               </div>
             </div>
             <div className="border-t hairline px-4 py-4">
               <Label>Entry</Label>
               <div className="mt-3 flex items-end justify-between gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <span className="label">Card</span>
+                  <span className="label">{isFounding ? `First ${FOUNDING_FREE_ENTRY_CAP} approved` : 'Card'}</span>
                   <span className="num text-2xl leading-none tracking-tight">
-                    {selected.entryFeeCents === 0 ? 'Free' : formatMoney(selected.entryFeeCents)}
+                    {isFounding ? 'Free' : selected.entryFeeCents === 0 ? 'Free' : formatMoney(selected.entryFeeCents)}
                   </span>
+                  {isFounding && selected.entryFeeCents > 0 ? (
+                    <span className="text-[11px] text-bone-faint">
+                      Later approved entries: {formatMoney(selected.entryFeeCents)}
+                    </span>
+                  ) : null}
                 </div>
                 <Button
                   type="button"
@@ -211,7 +220,9 @@ export function EntryFlow({
                     ? 'Reserving'
                     : full
                       ? 'Arena full'
-                      : selected.entryFeeCents === 0
+                      : isFounding
+                        ? 'Submit entry'
+                        : selected.entryFeeCents === 0
                         ? 'Enter free'
                         : `Pay ${formatMoney(selected.entryFeeCents)}`}
                 </Button>

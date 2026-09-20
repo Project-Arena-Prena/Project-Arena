@@ -6,6 +6,10 @@ All notable changes to Project Arena are recorded here.
 
 ### Changed
 
+- Scheduled the Founding Arena for 24–25 September 2026 in Western Indonesia Time.
+- Made the first ten approved Project entries free with atomic database reservations.
+- Released rejected free reservations and kept later approved entries at USD 29.
+- Added launch messaging, admin error feedback, and free-entry confirmation copy.
 - Replaced one-click Builder sign-in with a six-digit email verification flow
   that is resilient to link-prefetching security scanners.
 - Hardened transactional email delivery with retry-safe outbox behavior,
@@ -66,4 +70,3 @@ All notable changes to Project Arena are recorded here.
 - Repeat one provider-originated sandbox webhook as a release smoke test when
   Stripe Workbench is available; its dashboard was unavailable during the
   signed production replay rehearsal.
-

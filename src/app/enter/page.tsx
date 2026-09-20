@@ -51,10 +51,10 @@ export default async function EnterPage({
           </p>
           <div className="mt-8 border-y border-white/30 py-5">
             <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-bone-faint">
-              Entry buys a place on the grid
+              First 10 approved Projects enter free
             </p>
             <p className="mt-2 text-xs leading-relaxed text-bone-dim">
-              Payment never buys rank, support, or Champion status. Results are earned live.
+              Later entries use the listed Arena Entry price. Payment never buys rank, support, or Champion status.
             </p>
           </div>
           {canceled ? (

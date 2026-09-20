@@ -1,5 +1,5 @@
 import type { Arena } from '@/lib/types';
-import { foundingAction, foundingPhase, PHASE_LABEL } from '@/lib/founding';
+import { FOUNDING_FREE_ENTRY_CAP, foundingAction, foundingPhase, PHASE_LABEL } from '@/lib/founding';
 import { formatMoney } from '@/lib/format';
 import { ButtonLink } from '@/components/ui';
 import { Countdown } from '@/components/countdown';
@@ -23,11 +23,11 @@ export function EventSummary({ arena, now, heading: Heading = 'h2' }: { arena: A
     <Heading className="event-title">The Founding<br /><em>Arena.</em></Heading>
     <p className="founding-copy max-w-xl">{DESCRIPTION[phase]}</p>
     {confirmed ? <dl className="event-facts">
-      <div><dt>Entry</dt><dd>{arena.entryFeeCents === 0 ? 'Free' : formatMoney(arena.entryFeeCents)}</dd></div>
+      <div><dt>Entry</dt><dd>{arena.entryFeeCents === 0 ? 'Free' : `First ${FOUNDING_FREE_ENTRY_CAP} free · then ${formatMoney(arena.entryFeeCents)}`}</dd></div>
       <div><dt>Accepted Projects</dt><dd>{arena.acceptedCount ?? 0}</dd></div>
       <div><dt>Field capacity</dt><dd>{arena.entrantCap}</dd></div>
     </dl> : null}
-    {confirmed ? <p className="founding-copy mt-6">Starts {new Date(arena.startsAt).toLocaleString('en-GB', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' })} UTC · Ends {new Date(arena.endsAt).toLocaleString('en-GB', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' })} UTC</p> : null}
+    {confirmed ? <p className="founding-copy mt-6">Starts {new Date(arena.startsAt).toLocaleString('en-GB', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' })} WIB · Ends {new Date(arena.endsAt).toLocaleString('en-GB', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' })} WIB</p> : null}
     {target && Date.parse(target) > now ? <div className="mt-8"><p className="founding-eyebrow mb-4">{phase === 'live' ? 'Competition ends in' : 'Scheduled start in'}</p><Countdown target={target} serverNow={now} showDays /></div> : null}
     <ButtonLink href={action.href} size="lg" className="mt-9">{action.label}</ButtonLink>
     <p className="founding-copy mt-5">Entry buys participation. Rank is earned.</p>

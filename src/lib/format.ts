@@ -27,6 +27,15 @@ export function formatDate(iso: string): string {
   }).format(new Date(iso));
 }
 
+export function formatDateInTimeZone(iso: string, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone,
+  }).format(new Date(iso));
+}
+
 export function formatDateTime(iso: string): string {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
